@@ -1742,8 +1742,12 @@ function buildSearchCard(r){
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px">${catBadge(r.cat)}<span style="font-size:10px;color:var(--text3)">${r.label}</span></div>
       </div>
       <div style="text-align:right">
-        <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${r.chg>=0?'var(--green)':'var(--red)'}">${r.price>100?r.price.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):r.price.toFixed(4)}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:${r.chg>=0?'var(--green)':'var(--red)'}">${r.chg>=0?'+':''}${r.chg.toFixed(2)}%</div>
+        <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${r.chg>=0?'var(--green)':'var(--red)'}">
+          ${r.price>0?(r.price>100?r.price.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):r.price.toFixed(4)):'—'}
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:${r.chg>=0?'var(--green)':'var(--red)'}">
+          ${r.price>0?(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%':'Lance un scan'}
+        </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between">
@@ -1757,8 +1761,9 @@ function buildSearchCard(r){
 }
 
 function toggleFavoriteSearch(sym,label,short,cat,broker,btn){
-  if(!getAllAssets().find(a=>a.sym===sym)){
-    // Add to custom assets
+  // N'ajoute en customAssets QUE si l'actif n'est pas déjà dans les listes de base
+  const inBase=[...ASSETS_FAST,...ASSETS_SECTORIEL,...ASSETS_FULL].some(a=>a.sym===sym);
+  if(!inBase&&!getAllAssets().find(a=>a.sym===sym)){
     customAssets.push({sym,label,short,cat,broker,custom:true});
     saveCustomAssets();
   }
@@ -1777,23 +1782,34 @@ function openDetailFromSearch(sym){
   else{toast('⚠️ Lance un scan d\'abord','Pour voir l\'analyse complète de cet actif','warn');}
 }
 
-function showCategory(name,items){
+async function showCategory(name,items){
   document.getElementById('search-input').value=name;
   document.getElementById('search-clear').style.display='block';
   showSearchState('loading');
   document.getElementById('search-results-title').textContent=name;
-  // Enrich with signal data and prices
-  const results=items.map(item=>{
+
+  // Enrichit avec signaux + prix live pour la crypto
+  const results=await Promise.all(items.map(async item=>{
     const sigData=signals.find(s=>s.sym===item.sym);
-    return {
+    let price=sigData?sigData.price:0;
+    let chg=sigData?sigData.chgPct:0;
+    // Si pas de signal et crypto → prix Binance direct
+    if(!price&&item.sym.includes('-USD')){
+      try{
+        const binSym=item.sym.replace('-USD','USDT').replace(/[^A-Z]/g,'');
+        const r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol='+binSym,{signal:AbortSignal.timeout(4000)});
+        if(r.ok){const d=await r.json();price=parseFloat(d.lastPrice)||0;chg=parseFloat(d.priceChangePercent)||0;}
+      }catch(e){}
+    }
+    return{
       sym:item.sym,label:item.label,short:item.short,
       cat:item.cat||'Personnalisé',
       broker:item.sym.includes('-USD')?'binance':'t212',
-      price:sigData?sigData.price:0,
-      chg:sigData?sigData.chgPct:0,
+      price,chg,
       isFav:isFavorite(item.sym),
     };
-  });
+  }));
+
   showSearchState('results');
   document.getElementById('search-results-title').textContent=name+' — '+items.length+' actifs';
   renderSearchResults(results);
@@ -2331,50 +2347,56 @@ async function analyzeAsset(asset){
 async function startScan(){
   if(isScanning)return;
   isScanning=true;signals=[];
-  resetScanErrors();// reset compteurs et flags d'erreur pour ce nouveau scan
+  resetScanErrors();
   const btn=document.getElementById('scan-btn');btn.disabled=true;btn.textContent='⏳…';
   document.getElementById('sg').innerHTML='<div style="grid-column:span 2">'+Array(4).fill('<div class="skel" style="margin-bottom:8px"></div>').join('')+'</div>';
   let done=0,ok=0;
   const SCAN_ASSETS=getAllAssets();
-  // Batch de 2 actifs max avec 500ms entre chaque → respecte limite 8 req/min de Twelve Data
-  for(let i=0;i<SCAN_ASSETS.length;i+=2){
-    const batch=SCAN_ASSETS.slice(i,i+2);
-    const res=await Promise.allSettled(batch.map(a=>analyzeAsset(a)));
-    res.forEach(r=>{if(r.status==='fulfilled'&&r.value){ok++;signals.push(r.value);const s=r.value;if(s.isNew&&s.action==='buy')notify('🟢 '+s.short+' — LANCE-TOI','Entre à '+fp(s.entry,s.price)+' · Objectif '+fp(s.tp1,s.price)+' · Stop '+fp(s.sl,s.price),'buy');prevMap[s.sym]=s.action;}});
-    done+=batch.length;
+
+  // ── Respect strict limite TD : 8 req/min = 1 actif toutes les 7500ms ─────────
+  // PROBLÈME PRÉCÉDENT : batch de 2 / 500ms = 240 req/min → 429 immédiat
+  // → rotation clé 1 → clé 2 → clé 3 → toutes épuisées en <5 secondes
+  // SOLUTION : 1 actif séquentiel toutes les 7500ms = 8 req/min exact
+  const TD_DELAY=7500;
+
+  for(let i=0;i<SCAN_ASSETS.length;i++){
+    const asset=SCAN_ASSETS[i];
+    const result=await analyzeAsset(asset);
+    if(result){
+      ok++;
+      signals.push(result);
+      if(result.isNew&&result.action==='buy'){
+        notify('🟢 '+result.short+' — LANCE-TOI','Entre à '+fp(result.entry,result.price)+' · Objectif '+fp(result.tp1,result.price)+' · Stop '+fp(result.sl,result.price),'buy');
+      }
+      prevMap[result.sym]=result.action;
+    }
+    done++;
     document.getElementById('pf').style.width=(done/SCAN_ASSETS.length*100)+'%';
-    document.getElementById('scan-info').textContent=done+'\/'+SCAN_ASSETS.length+' analysés…';
-    renderSignals();checkTPSL();
-    await new Promise(r=>setTimeout(r,500));
+    document.getElementById('scan-info').textContent=done+'\/'+SCAN_ASSETS.length+' analysés… ('+ok+' signaux)';
+    if(done%3===0||done===SCAN_ASSETS.length){renderSignals();checkTPSL();}
+    if(i<SCAN_ASSETS.length-1)await new Promise(r=>setTimeout(r,TD_DELAY));
   }
+
   signals.sort((a,b)=>{const o={buy:0,sell:1,wait:2};if(o[a.action]!==o[b.action])return o[a.action]-o[b.action];return b.score-a.score;});
   renderSignals();updateHome();updateThermo();
   document.getElementById('pf').style.width='100%';setTimeout(()=>document.getElementById('pf').style.width='0%',800);
   const strong=signals.filter(s=>s.action==='buy').length;
   document.getElementById('scan-info').textContent=strong+' opportunités · '+ok+' analysés';
-  // Diagnostic d'erreurs : avertit si trop d'actifs ont échoué
   reportScanErrors(ok,SCAN_ASSETS.length);
-  if(ok===0){document.getElementById('sg').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text"><strong>Aucune donnée</strong><br>Désactive ton bloqueur de pub<br>et essaie en navigation privée</div></div>';}
+  if(ok===0){document.getElementById('sg').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text"><strong>Aucune donnée</strong><br>Configure ton WEBHOOK Apps Script<br>et tes clés Twelve Data dans Réglages</div></div>';}
   btn.disabled=false;btn.textContent='↻ Rescanner';isScanning=false;
-  // ── Sync immédiat des prix du scan vers les positions ouvertes ───────────────
-  if(positions.some(p=>p.status==='open')){
-    await refreshOpenPositions();
-  }
-  // ── Auto-run pépites après le scan si clé IA présente ─────────────────────
-  // (remplace le setTimeout 25s qui appelait Claude avant que le scan soit terminé)
+  if(positions.some(p=>p.status==='open'))await refreshOpenPositions();
   if(hasAiKey()&&signals.filter(s=>s.action==='buy').length>0){
     const pepEl=document.getElementById('pepites-list');
     if(pepEl&&(!pepEl.textContent.trim()||pepEl.querySelector('.cursor'))){
       setTimeout(()=>runPepites(),500);
     }
   }
-  // Mode rapide : re-scan auto toutes les 60min. Mode sectoriel : PAS de re-scan auto
   if(scanMode==='fast'){
     startCd(3600);
     clearInterval(scanTimer);
     scanTimer=setInterval(()=>startScan(),3600000);
   } else {
-    // Mode sectoriel : manuel uniquement — économise le quota TD
     clearInterval(scanTimer);
     document.getElementById('countdown').textContent='Manuel';
   }
@@ -3835,12 +3857,15 @@ function calcCompositeScore(s){
   let score=0;
   // 1. Score technique /7 → 40 pts max
   score+=(s.score/7)*40;
-  // 2. Ratio R/R → 25 pts max (exclu si R/R < 1.5)
-  if(rr>=4)score+=25;
-  else if(rr>=3)score+=20;
-  else if(rr>=2)score+=12;
-  else if(rr>=1.5)score+=6;
-  else return 0;// R/R trop faible → exclu
+  // 2. Ratio R/R → 25 pts max
+  // Note: la formule ATR donne tp1=ATR×2, sl=ATR×1.5 → R/R fixe de 1.33
+  // Seuil minimum à 1.0 pour ne pas tout exclure
+  if(rr>=3)score+=25;
+  else if(rr>=2)score+=20;
+  else if(rr>=1.5)score+=12;
+  else if(rr>=1.2)score+=8;
+  else if(rr>=1.0)score+=4;
+  else if(rr<1.0)return 0;// R/R vraiment trop faible → exclu
   // 3. Volume relatif → 20 pts max
   if(volR>=3)score+=20;
   else if(volR>=2)score+=15;
@@ -3886,7 +3911,11 @@ function updateHome(){
         +'</div>';
     }).join('');
   } else {
-    document.getElementById('top3-list').innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">'+(signals.length?'Aucune opportunité qualifiée (R/R > 1.5 requis)':'Lance le scanner pour voir les opportunités')+'</div>';
+    document.getElementById('top3-list').innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">'
+      +(signals.length
+        ?'Aucune opportunité qualifiée — marché sans signal fort · Score composite insuffisant'
+        :'Lance le scanner pour voir les opportunités')
+      +'</div>';
   }
   document.getElementById('dash-scan-time').textContent=signals.length?signals.length+' actifs · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 
