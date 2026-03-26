@@ -739,7 +739,14 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
     <div id="custom-assets-list"></div>
   </div>
   <div class="card" style="margin-bottom:12px">
-    <div class="card-title">🤖 Clé API Claude (IA)</div>
+    <div class="card-title">📊 Clés API Twelve Data</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Ajoute jusqu'à 2 clés — l'app bascule automatiquement si l'une est épuisée.</div>
+    <input type="text" class="settings-input" id="td-key1-input" placeholder="Clé 1 (gratuite sur twelvedata.com)">
+    <input type="text" class="settings-input" id="td-key2-input" placeholder="Clé 2 (optionnelle — compte différent)">
+    <input type="text" class="settings-input" id="td-key3-input" placeholder="Clé 3 (optionnelle — compte différent)">
+    <button style="width:100%;padding:10px;border-radius:var(--rs);border:none;background:var(--blue);color:white;font-size:12px;font-weight:700" onclick="saveTDKeys()">Enregistrer 🔒</button>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px" id="td-key-status">Plan gratuit : 800 requêtes/jour · 8/minute</div>
+  </div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Nécessaire pour le Coach IA, le Briefing et la Météo macro.</div>
     <input type="password" class="settings-input" id="ai-key-input" placeholder="sk-ant-...">
     <div style="display:flex;gap:8px;margin-bottom:6px">
@@ -1248,6 +1255,7 @@ window.addEventListener('load',async()=>{
 
   // ── ÉTAPE 4 : Timer refresh continu toutes les 30s ───────────────────────
   startRealTime();
+  scheduleTDKeysReset();
 
   // ── UI STATUS ─────────────────────────────────────────────────────────────
   if(hasAiKey()){
@@ -1739,7 +1747,24 @@ function fp(v,ref){return ref>100?v.toLocaleString('fr-FR',{minimumFractionDigit
 function fgScore(closes,rsiL,volR){return Math.min(100,Math.max(0,Math.round((rsiL/100)*40+(volR>1?30:volR*30)+(closes[closes.length-1]>closes[closes.length-5]?30:0))));}
 
 // ── PRIX UNIFIÉS — Apps Script + Binance + CoinGecko ────────────────────────
-const TD_KEY='de8a2804261f44959608e6d226312385';
+const TD_KEYS=[
+  localStorage.getItem('ts_td_key1')||'de8a2804261f44959608e6d226312385',
+  localStorage.getItem('ts_td_key2')||'',
+  localStorage.getItem('ts_td_key3')||''
+].filter(k=>k.length>0);
+let tdKeyIndex=0;
+let tdAllExhausted=false;
+function TD_KEY(){return TD_KEYS[tdKeyIndex]||TD_KEYS[0];}
+function rotateTDKey(){
+  tdKeyIndex++;
+  if(tdKeyIndex>=TD_KEYS.length){
+    tdAllExhausted=true;
+    console.warn('Twelve Data — toutes les clés épuisées, bascule sur Yahoo Finance');
+  } else {
+    console.warn('Twelve Data — clé épuisée, rotation vers clé '+(tdKeyIndex+1));
+  }
+}
+function resetTDKeys(){tdKeyIndex=0;tdAllExhausted=false;}
 const TD_BASE='https://api.twelvedata.com';
 
 // Crypto symbols map for CoinGecko
@@ -1796,14 +1821,36 @@ async function getPrice(sym){
     return null;
   }
 
-  // ACTIONS/ETF/FOREX : Apps Script (seule source qui fonctionne depuis GitHub Pages)
+  // ACTIONS/ETF/FOREX : Twelve Data via webhook, Yahoo si toutes clés épuisées
+  if(!tdAllExhausted){
+    // Essaie chaque clé disponible
+    const startIndex=tdKeyIndex;
+    do{
+      try{
+        const tdSym=toTDSymbol(sym);
+        const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY();
+        const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(10000)});
+        if(res.ok){
+          const d=await res.json();
+          if(d.code===429){rotateTDKey();continue;}
+          if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
+        }
+      }catch(e){}
+      break;
+    }while(!tdAllExhausted&&tdKeyIndex!==startIndex);
+  }
+
+  // FALLBACK YAHOO — utilisé quand toutes les clés TD sont épuisées
   try{
-    const tdSym=toTDSymbol(sym);
-    const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY;
-    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(10000)});
+    const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1d&interval=1m';
+    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(10000)});
     if(res.ok){
       const d=await res.json();
-      if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
+      const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(price&&price>0){
+        if(tdAllExhausted)console.info('Yahoo fallback OK pour '+sym);
+        return price;
+      }
     }
   }catch(e){}
   return null;
@@ -1814,32 +1861,38 @@ async function getTDPrice(sym){return getPrice(sym);}
 
 // ── SÉRIE HISTORIQUE POUR LE SCAN ─────────────────────────────────────────────
 async function getTDTimeSeries(sym,outputsize=90){
-  const tdSym=toTDSymbol(sym);
-  const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY});
-  const tdUrl=TD_BASE+'/time_series?'+params.toString();
-
-  // Via Apps Script (fonctionne depuis GitHub Pages)
-  try{
-    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
-    if(res.ok){
-      const d=await res.json();
-      if(d.values&&d.values.length){
-        const values=d.values.reverse();
-        return{
-          closes:values.map(v=>parseFloat(v.close)),
-          highs:values.map(v=>parseFloat(v.high)),
-          lows:values.map(v=>parseFloat(v.low)),
-          vols:values.map(v=>parseFloat(v.volume||0)),
-        };
-      }
-    }
-  }catch(e){}
+  // Essaie chaque clé TD disponible
+  if(!tdAllExhausted){
+    const startIndex=tdKeyIndex;
+    do{
+      const tdSym=toTDSymbol(sym);
+      const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY()});
+      const tdUrl=TD_BASE+'/time_series?'+params.toString();
+      try{
+        const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
+        if(res.ok){
+          const d=await res.json();
+          if(d.code===429){rotateTDKey();continue;}
+          if(d.values&&d.values.length){
+            const values=d.values.reverse();
+            return{
+              closes:values.map(v=>parseFloat(v.close)),
+              highs:values.map(v=>parseFloat(v.high)),
+              lows:values.map(v=>parseFloat(v.low)),
+              vols:values.map(v=>parseFloat(v.volume||0)),
+            };
+          }
+        }
+      }catch(e){}
+      break;
+    }while(!tdAllExhausted&&tdKeyIndex!==startIndex);
+  }
   throw new Error('Impossible de récupérer les données pour '+sym);
 }
 
 // Fonctions de compatibilité
 async function fetchTD(endpoint,params={}){
-  const p=new URLSearchParams({...params,apikey:TD_KEY});
+  const p=new URLSearchParams({...params,apikey:TD_KEY()});
   const url=TD_BASE+endpoint+'?'+p.toString();
   const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(10000)});
   if(!res.ok)throw new Error('Proxy HTTP '+res.status);
@@ -3193,6 +3246,34 @@ async function testAiKey(){
   }catch(e){
     if(ss){ss.textContent='⚠️ Impossible de contacter l\'API (réseau ?)';ss.style.color='var(--orange)';}
   }
+}
+function saveTDKeys(){
+  const k1=document.getElementById('td-key1-input').value.trim();
+  const k2=document.getElementById('td-key2-input').value.trim();
+  const k3=document.getElementById('td-key3-input').value.trim();
+  if(k1){localStorage.setItem('ts_td_key1',k1);TD_KEYS[0]=k1;document.getElementById('td-key1-input').value='';document.getElementById('td-key1-input').placeholder='Clé 1 enregistrée ✓';}
+  if(k2){localStorage.setItem('ts_td_key2',k2);TD_KEYS[1]=k2;document.getElementById('td-key2-input').value='';document.getElementById('td-key2-input').placeholder='Clé 2 enregistrée ✓';}
+  if(k3){localStorage.setItem('ts_td_key3',k3);TD_KEYS[2]=k3;document.getElementById('td-key3-input').value='';document.getElementById('td-key3-input').placeholder='Clé 3 enregistrée ✓';}
+  // Reconstruire le tableau proprement
+  TD_KEYS.length=0;
+  ['ts_td_key1','ts_td_key2','ts_td_key3'].forEach(k=>{const v=localStorage.getItem(k);if(v&&v.length>0)TD_KEYS.push(v);});
+  resetTDKeys();
+  const st=document.getElementById('td-key-status');
+  const n=TD_KEYS.filter(k=>k).length;
+  if(st){st.textContent='✅ '+n+' clé(s) active(s) — rotation auto + Yahoo en dernier recours';st.style.color='var(--green)';}
+  toast('✅ Clés Twelve Data sauvegardées',n+' clé(s) · Yahoo Finance en fallback','info');
+}
+
+// Reset des clés à minuit (quota Twelve Data se réinitialise chaque jour)
+function scheduleTDKeysReset(){
+  const now=new Date();
+  const midnight=new Date(now);
+  midnight.setHours(24,0,30,0);
+  setTimeout(()=>{
+    resetTDKeys();
+    toast('🔄 Clés Twelve Data réinitialisées','Quota journalier remis à zéro','info');
+    scheduleTDKeysReset();
+  },midnight-now);
 }
 function saveBinKey(){
   const k=document.getElementById('bin-key').value.trim();
