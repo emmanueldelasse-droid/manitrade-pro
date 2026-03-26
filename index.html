@@ -1380,7 +1380,7 @@ async function renderFavoritesView(){
 
 async function runFavCoach(asset,sig,pos,el){
   if(!el)return;
-  const key=localStorage.getItem('ts_ai_key')||'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';
+  const key=localStorage.getItem('ts_ai_key')||'TA_CLE_API_ICI';
   if(!key||key==='TA_CLE_API_ICI'){el.style.display='none';return;}
   el.style.display='block';
   el.innerHTML='<span class="cursor"></span>';
@@ -1417,25 +1417,26 @@ function getMarketInfoForAsset(cat,sym){
   if(cat==='Crypto'||sym?.includes('-USD')){
     return{open:true,label:'🟢 Crypto — 24h/24',next:''};
   }
-  // Forex — weekdays only
+  // Forex
   if(cat==='Forex'){
     if(isWeekend)return{open:false,label:'🔴 Forex fermé',next:'Ouvre lundi 0h00'};
     return{open:true,label:'🟢 Forex — 24h/24 (lun-ven)',next:''};
   }
-  // US stocks/ETF — NYSE/Nasdaq 15h30-22h00 Paris
-  const isUS=!sym?.includes('.')||cat==='ETF';
-  if(isUS){
-    if(isWeekend)return{open:false,label:'🔴 NYSE fermé',next:'Ouvre lundi 15h30'};
-    if(hm>=15*60+30&&hm<22*60)return{open:true,label:'🟢 NYSE ouvert',next:'Ferme à 22h00'};
-    if(hm>=14*60+30&&hm<15*60+30)return{open:false,label:'🟡 Pré-marché',next:'NYSE ouvre à 15h30'};
-    if(hm<15*60+30)return{open:false,label:'🔴 NYSE fermé',next:'Ouvre à 15h30'};
-    return{open:false,label:'🔴 NYSE fermé',next:'Ouvre demain 15h30'};
+  // European stocks — détection par suffixe symbole
+  const isEU=sym?.includes('.PA')||sym?.includes('.L')||sym?.includes('.DE')||sym?.includes('.SW')||sym?.includes('.MI')||cat==='Luxe'||cat==='Aéro/Défense';
+  if(isEU){
+    const mkt=sym?.includes('.L')?'London Stock Exchange':'Euronext';
+    if(isWeekend)return{open:false,label:'🔴 '+mkt+' fermé',next:'Ouvre lundi 9h00'};
+    if(hm>=9*60&&hm<17*60+30)return{open:true,label:'🟢 '+mkt+' ouvert',next:'Ferme à 17h30'};
+    if(hm<9*60)return{open:false,label:'🔴 '+mkt+' fermé',next:'Ouvre à 9h00'};
+    return{open:false,label:'🔴 '+mkt+' fermé',next:'Ouvre demain 9h00'};
   }
-  // European stocks — Euronext/Xetra 9h00-17h30 Paris
-  if(isWeekend)return{open:false,label:'🔴 Euronext fermé',next:'Ouvre lundi 9h00'};
-  if(hm>=9*60&&hm<17*60+30)return{open:true,label:'🟢 Euronext ouvert',next:'Ferme à 17h30'};
-  if(hm<9*60)return{open:false,label:'🔴 Euronext fermé',next:'Ouvre à 9h00'};
-  return{open:false,label:'🔴 Euronext fermé',next:'Ouvre demain 9h00'};
+  // US stocks/ETF — NYSE/Nasdaq
+  if(isWeekend)return{open:false,label:'🔴 NYSE fermé',next:'Ouvre lundi 15h30'};
+  if(hm>=15*60+30&&hm<22*60)return{open:true,label:'🟢 NYSE ouvert',next:'Ferme à 22h00'};
+  if(hm>=14*60+30&&hm<15*60+30)return{open:false,label:'🟡 Pré-marché',next:'NYSE ouvre à 15h30'};
+  if(hm<15*60+30)return{open:false,label:'🔴 NYSE fermé',next:'Ouvre à 15h30'};
+  return{open:false,label:'🔴 NYSE fermé',next:'Ouvre demain 15h30'};
 }
 
 async function refreshFavorites(){await renderFavoritesView();}
@@ -1503,13 +1504,12 @@ async function doSearch(query){
   // 2. Check known tickers
   const knownSym=KNOWN_TICKERS[q];
 
-  // 3. Try to fetch from Yahoo directly
+  // 3. Assets to try
   const toTry=[];
   if(local.length)toTry.push(...local.slice(0,3));
   if(knownSym&&!toTry.find(a=>a.sym===knownSym)){
     toTry.push({sym:knownSym,label:query,short:query.toUpperCase(),cat:'Recherche',broker:'t212'});
   }
-  // Also try direct symbol
   const directSym=query.toUpperCase();
   if(!toTry.find(a=>a.sym===directSym)){
     toTry.push({sym:directSym,label:directSym,short:directSym,cat:'Recherche',broker:'t212',tryAlso:[directSym+'.PA',directSym+'.L',directSym+'.DE']});
@@ -1735,11 +1735,23 @@ function calcCap(cap,atr,price){
 function fp(v,ref){return ref>100?v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):v.toFixed(4);}
 function fgScore(closes,rsiL,volR){return Math.min(100,Math.max(0,Math.round((rsiL/100)*40+(volR>1?30:volR*30)+(closes[closes.length-1]>closes[closes.length-5]?30:0))));}
 
-// ── TWELVE DATA API ────────────────────────────────────────────────────────────
+// ── PRIX UNIFIÉS — Apps Script + Binance + CoinGecko ────────────────────────
 const TD_KEY='de8a2804261f44959608e6d226312385';
 const TD_BASE='https://api.twelvedata.com';
 
-// Convert Yahoo symbol to Twelve Data format
+// Crypto symbols map for CoinGecko
+const CG_MAP={
+  'BTC-USD':'bitcoin','ETH-USD':'ethereum','SOL-USD':'solana',
+  'BNB-USD':'binancecoin','XRP-USD':'ripple','AVAX-USD':'avalanche-2',
+  'DOGE-USD':'dogecoin','LINK-USD':'chainlink','DOT-USD':'polkadot',
+  'ADA-USD':'cardano','MATIC-USD':'matic-network','ATOM-USD':'cosmos',
+  'UNI-USD':'uniswap','AAVE-USD':'aave','LTC-USD':'litecoin',
+  'INJ-USD':'injective-protocol','ARB-USD':'arbitrum','OP-USD':'optimism',
+  'NEAR-USD':'near','SUI-USD':'sui','APT-USD':'aptos','TRX-USD':'tron',
+  'ICP-USD':'internet-computer','RENDER-USD':'render-token','FTM-USD':'fantom',
+};
+
+// Convert symbol to Twelve Data format
 function toTDSymbol(sym){
   const map={
     'BTC-USD':'BTC/USD','ETH-USD':'ETH/USD','SOL-USD':'SOL/USD',
@@ -1749,95 +1761,110 @@ function toTDSymbol(sym){
     'ATOM-USD':'ATOM/USD','UNI-USD':'UNI/USD','AAVE-USD':'AAVE/USD',
     'INJ-USD':'INJ/USD','ARB-USD':'ARB/USD','OP-USD':'OP/USD',
     'NEAR-USD':'NEAR/USD','SUI-USD':'SUI/USD','APT-USD':'APT/USD',
-    'TRX-USD':'TRX/USD','ICP-USD':'ICP/USD','RENDER-USD':'RNDR/USD',
-    'FTM-USD':'FTM/USD',
+    'TRX-USD':'TRX/USD','ICP-USD':'ICP/USD','RENDER-USD':'RNDR/USD','FTM-USD':'FTM/USD',
     'GC=F':'XAU/USD','CL=F':'WTI/USD','SI=F':'XAG/USD','NG=F':'NATGAS/USD',
     'EURUSD=X':'EUR/USD','GBPUSD=X':'GBP/USD','USDJPY=X':'USD/JPY',
   };
-  // ETF and stocks not in map pass through directly (TD accepts them as-is)
-  // But some need exchange suffix
-  if(sym.endsWith('.PA'))return sym; // French stocks
-  if(sym.endsWith('.L'))return sym;  // UK stocks
-  if(sym.endsWith('.DE'))return sym; // German stocks
-  if(sym.endsWith('.SW'))return sym; // Swiss stocks
-  if(sym.endsWith('.MI'))return sym; // Italian stocks
+  if(sym.endsWith('.PA')||sym.endsWith('.L')||sym.endsWith('.DE')||sym.endsWith('.SW')||sym.endsWith('.MI'))return sym;
   return map[sym]||sym;
 }
 
-// Fetch via Apps Script proxy (fixes iPhone CORS + unlimited calls)
-async function fetchTDViaProxy(endpoint,params={}){
-  try{
-    const p=new URLSearchParams({...params,apikey:TD_KEY});
-    const url=TD_BASE+endpoint+'?'+p.toString();
-    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(10000)});
-    if(!res.ok)throw new Error('Proxy HTTP '+res.status);
-    const d=await res.json();
-    if(d.status==='error')throw new Error('TD: '+d.message);
-    return d;
-  }catch(e){
-    // Fallback direct (works on desktop)
-    const p=new URLSearchParams({...params,apikey:TD_KEY});
-    const res=await fetch(TD_BASE+endpoint+'?'+p.toString(),{signal:AbortSignal.timeout(8000)});
-    if(!res.ok)throw new Error('TD HTTP '+res.status);
-    const d=await res.json();
-    if(d.status==='error')throw new Error('TD: '+d.message);
-    return d;
-  }
-}
+// ── FONCTION PRINCIPALE : getPrice(sym) ───────────────────────────────────────
+// Utilisée partout dans l'app — source unique de vérité
+async function getPrice(sym){
+  const isCrypto=sym.includes('-USD');
 
-async function fetchTD(endpoint,params={}){
-  return fetchTDViaProxy(endpoint,params);
-}
-
-async function getTDPrice(sym){
-  try{
-    const d=await fetchTD('/price',{symbol:toTDSymbol(sym)});
-    return parseFloat(d.price);
-  }catch(e){return null;}
-}
-
-async function getTDTimeSeries(sym,outputsize=90){
-  const d=await fetchTD('/time_series',{symbol:toTDSymbol(sym),interval:'1day',outputsize});
-  if(!d.values||!d.values.length)throw new Error('No data');
-  const values=d.values.reverse();
-  return{
-    closes:values.map(v=>parseFloat(v.close)),
-    highs:values.map(v=>parseFloat(v.high)),
-    lows:values.map(v=>parseFloat(v.low)),
-    vols:values.map(v=>parseFloat(v.volume||0)),
-  };
-}
-
-async function getTDPrices(syms){
-  try{
-    const tdSyms=syms.map(toTDSymbol).join(',');
-    const d=await fetchTD('/price',{symbol:tdSyms});
-    const result={};
-    if(d.price){result[syms[0]]=parseFloat(d.price);}
-    else{for(const sym of syms){const ts=toTDSymbol(sym);if(d[ts]&&d[ts].price)result[sym]=parseFloat(d[ts].price);}}
-    return result;
-  }catch(e){return{};}
-}
-
-// Fallback proxies for search
-const PROXIES=[
-  u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u),
-  u=>'https://corsproxy.io/?'+encodeURIComponent(u),
-];
-async function fetchData(url,timeout=8000){
-  for(let i=0;i<PROXIES.length;i++){
+  // CRYPTO : Binance (direct, pas de CORS) puis CoinGecko
+  if(isCrypto){
+    // 1. Binance direct
     try{
-      const ctrl=new AbortController();
-      const tid=setTimeout(()=>ctrl.abort(),timeout);
-      const r=await fetch(PROXIES[i](url),{signal:ctrl.signal});
-      clearTimeout(tid);if(!r.ok)throw new Error('HTTP '+r.status);
-      const txt=await r.text();
-      try{const w=JSON.parse(txt);return JSON.parse(w.contents||w);}
-      catch(e){return JSON.parse(txt);}
+      const binSym=sym.replace('-USD','USDT').replace(/[^A-Z]/g,'');
+      const res=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+binSym,{signal:AbortSignal.timeout(5000)});
+      if(res.ok){const d=await res.json();if(d.price&&parseFloat(d.price)>0)return parseFloat(d.price);}
     }catch(e){}
+    // 2. CoinGecko direct (pas de CORS)
+    try{
+      const cgId=CG_MAP[sym];
+      if(cgId){
+        const res=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+cgId+'&vs_currencies=usd',{signal:AbortSignal.timeout(6000)});
+        if(res.ok){const d=await res.json();if(d[cgId]?.usd)return d[cgId].usd;}
+      }
+    }catch(e){}
+    return null;
   }
-  throw new Error('Proxys indisponibles');
+
+  // ACTIONS/ETF/FOREX : Apps Script (seule source qui fonctionne depuis GitHub Pages)
+  try{
+    const tdSym=toTDSymbol(sym);
+    const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY;
+    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(10000)});
+    if(res.ok){
+      const d=await res.json();
+      if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
+    }
+  }catch(e){}
+  return null;
 }
+
+// getTDPrice = alias de getPrice pour compatibilité
+async function getTDPrice(sym){return getPrice(sym);}
+
+// ── SÉRIE HISTORIQUE POUR LE SCAN ─────────────────────────────────────────────
+async function getTDTimeSeries(sym,outputsize=90){
+  const tdSym=toTDSymbol(sym);
+  const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY});
+  const tdUrl=TD_BASE+'/time_series?'+params.toString();
+
+  // Via Apps Script (fonctionne depuis GitHub Pages)
+  try{
+    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
+    if(res.ok){
+      const d=await res.json();
+      if(d.values&&d.values.length){
+        const values=d.values.reverse();
+        return{
+          closes:values.map(v=>parseFloat(v.close)),
+          highs:values.map(v=>parseFloat(v.high)),
+          lows:values.map(v=>parseFloat(v.low)),
+          vols:values.map(v=>parseFloat(v.volume||0)),
+        };
+      }
+    }
+  }catch(e){}
+  throw new Error('Impossible de récupérer les données pour '+sym);
+}
+
+// Fonctions de compatibilité
+async function fetchTD(endpoint,params={}){
+  const p=new URLSearchParams({...params,apikey:TD_KEY});
+  const url=TD_BASE+endpoint+'?'+p.toString();
+  const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(10000)});
+  if(!res.ok)throw new Error('Proxy HTTP '+res.status);
+  const d=await res.json();
+  if(d.status==='error')throw new Error('TD: '+d.message);
+  return d;
+}
+async function fetchTDViaProxy(endpoint,params={}){return fetchTD(endpoint,params);}
+async function getTDPrices(syms){
+  const result={};
+  for(const sym of syms){
+    const p=await getPrice(sym);
+    if(p)result[sym]=p;
+  }
+  return result;
+}
+
+// Suppression des anciens proxys défaillants
+const PROXIES=[];
+async function fetchData(url,timeout=8000){
+  // Yahoo via Apps Script uniquement
+  try{
+    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(timeout)});
+    if(res.ok){const d=await res.json();if(d.values||d.chart)return d;const txt=JSON.stringify(d);return JSON.parse(txt);}
+  }catch(e){}
+  throw new Error('Données indisponibles');
+}
+
 
 async function analyzeAsset(asset){
   let closes,highs,lows,vols;
@@ -2036,10 +2063,15 @@ function openDetail(sym){
 
     +'<div class="ind-box"><div class="ind-title">Fibonacci</div>'
     +'<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:4px">'
-    +[{lbl:'Haut',val:s.fibV?.hi||0},{lbl:'23.6%',val:s.fibV?.f236||0},{lbl:'38.2%',val:s.fibV?.f382||0},{lbl:'61.8%',val:s.fibV?.f618||0},{lbl:'Bas',val:s.fibV?.lo||0}].map(f=>{
-      const isC=f.val&&Math.abs(s.price-f.val)/s.price<.015;
-      return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;padding:2px 4px;border-radius:3px;background:'+(isC?'var(--blue-bg)':'transparent')+'"><span style="color:var(--text3)">'+f.lbl+'</span>'+(isC?'<span style="font-size:8px;color:var(--blue)">← ici</span>':'')+'<span style="font-family:var(--mono);font-weight:700">'+fp(f.val,s.price)+'</span></div>';
-    }).join('')
+    +(()=>{
+      const fibVals=[{lbl:'Haut',val:s.fibV?.hi||0},{lbl:'23.6%',val:s.fibV?.f236||0},{lbl:'38.2%',val:s.fibV?.f382||0},{lbl:'61.8%',val:s.fibV?.f618||0},{lbl:'Bas',val:s.fibV?.lo||0}];
+      const hasData=fibVals.some(f=>f.val>0);
+      if(!hasData)return '<div style="font-size:10px;color:var(--text3)">Données insuffisantes — lance un scan complet</div>';
+      return fibVals.map(f=>{
+        const isC=f.val&&Math.abs(s.price-f.val)/s.price<.015;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;padding:2px 4px;border-radius:3px;background:'+(isC?'var(--blue-bg)':'transparent')+'"><span style="color:var(--text3)">'+f.lbl+'</span>'+(isC?'<span style="font-size:8px;color:var(--blue)">← ici</span>':'')+'<span style="font-family:var(--mono);font-weight:700">'+fp(f.val,s.price)+'</span></div>';
+      }).join('');
+    })()
     +'</div></div>'
 
     +'<div class="ind-box"><div class="ind-title">Fear &amp; Greed</div>'
@@ -2056,7 +2088,7 @@ function openDetail(sym){
     +'<div class="cap-item"><div class="cap-lbl">Gain potentiel</div><div class="cap-val" style="color:var(--green)">+'+s.capC.gain+'€</div></div>'
     +'</div></div>'
 
-    +'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--rs);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e">⏰ <strong>Meilleur moment :</strong> '+s.bestHour+'</div>'
+    +(s.bestHour&&s.bestHour!=='undefined'?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--rs);padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e">⏰ <strong>Meilleur moment :</strong> '+s.bestHour+'</div>':'')
 
     +'<div class="conds-list"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Les 7 conditions analysées</div>'
     +s.conditions.map(c=>'<div class="cond-item"><div class="cond-ico '+(c.ok?'ok':'bad')+'">'+(c.ok?'✓':'✗')+'</div><div style="flex:1"><div class="cond-name">'+c.name+'</div><div class="cond-desc">'+c.desc+'</div></div><span class="cond-tag '+(c.ok?'ct-ok':'ct-bad')+'">'+(c.ok?'OK':'NON')+'</span></div>').join('')
@@ -2290,7 +2322,7 @@ function showBinanceBalance(balances){
   const top=balances.slice(0,5).map(b=>`${b.asset}: ${(b.free+b.locked).toFixed(4)}`).join(' · ');
   toast('💰 Solde Binance',top||'Compte connecté','info');
 }
-const WEBHOOK_DEFAULT='https://script.google.com/macros/s/AKfycbw2iW5ywFm8g0pDNevmimQeVDqbAnM7-VEoU-Y0bnL6gq47F7pMBGXNb4jTYO7mL5a_/exec';
+const WEBHOOK_DEFAULT='https://script.google.com/macros/s/AKfycbxl6fjrUP3rT1Sw-fkWUjNqeR8G0oV5dUC_1JtpM-UkSN_W7Mht5KOQGXa5UVHXc5-M/exec';
 let WEBHOOK=localStorage.getItem('ts_webhook')||WEBHOOK_DEFAULT;
 
 function saveWebhook(){
@@ -2389,17 +2421,29 @@ let priceHistory={};// sym -> [prices]
 async function refreshOpenPositions(){
   const open=positions.filter(p=>p.status==='open');
   if(!open.length)return;
-
-  // Split crypto vs others
   const cryptos=open.filter(p=>p.broker==='binance');
   const others=open.filter(p=>p.broker!=='binance');
   let updated=0;
 
-  // Fetch prices via fetchTD (uses Apps Script proxy on iPhone, direct on desktop)
-  for(const pos of [...cryptos,...others]){
+  // ── CRYPTO via getPrice (Binance → CoinGecko) ───────────────────────────
+  for(const pos of cryptos){
     try{
-      const d=await fetchTD('/price',{symbol:toTDSymbol(pos.sym)});
-      const price=parseFloat(d.price);
+      const price=await getPrice(pos.sym);
+      if(price&&price>0){
+        pos.currentPrice=price;
+        if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
+        priceHistory[pos.sym].push(price);
+        if(priceHistory[pos.sym].length>60)priceHistory[pos.sym].shift();
+        autoCloseCheck(pos,price);
+        updated++;
+      }
+    }catch(e){}
+  }
+
+  // ── STOCKS/ETF via Twelve Data (proxy → direct fallback) ──────────────────
+  for(const pos of others){
+    try{
+      const price=await getTDPrice(pos.sym);
       if(price&&price>0){
         pos.currentPrice=price;
         if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
@@ -3311,11 +3355,11 @@ async function runPepitesCore(targetEl,fullMode=false){
 
   const prompt='Tu es un analyste financier professionnel utilisant Wyckoff, ICT/SMC, et analyse technique avancée. '
     +'Trouve '+(fullMode?'5':'3')+' pépites d\'investissement sous-évaluées avec fort potentiel de hausse. '
-    +'Critères: momentum technique, catalyseur identifiable, secteur en croissance, R/R>2, volume en accumulation. '
+    +'Critères UNIQUEMENT techniques: momentum RSI, tendance MA20/MA50, volume > moyenne, signal Bollinger. Sans catalyseur, sans événement inventé, sans date. '
     +'Exclure les actifs déjà en position: '+( openSyms.join(',')||'aucun')+'. '
     +'Signaux détectés: '+scanTop+'. '
     +'Pour chaque pépite, JSON STRICT (tableau de '+(fullMode?5:3)+' objets):\n'
-    +'[{"sym":"TICKER","label":"Nom complet","why":"Analyse en 2 phrases (sans markdown)","entry":0.00,"tp":0.00,"sl":0.00,"score":8,"cat":"Secteur","broker":"t212 ou binance","catalyseur":"Catalyseur précis avec date si possible","tradeType":"Scalping|DayTrading|Swing|Position"}]\n'
+    +'[{"sym":"TICKER","label":"Nom complet","why":"Analyse en 2 phrases (sans markdown)","entry":0.00,"tp":0.00,"sl":0.00,"score":8,"cat":"Secteur","broker":"t212 ou binance","catalyseur":"","tradeType":"Scalping|DayTrading|Swing|Position"}]\n'
     +'Réponds UNIQUEMENT avec le JSON valide. Tickers Yahoo Finance réels.';
 
   try{
