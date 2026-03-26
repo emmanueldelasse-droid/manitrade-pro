@@ -740,7 +740,10 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
     <div class="card-title">🤖 Clé API Claude (IA)</div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Nécessaire pour le Coach IA, le Briefing et la Météo macro.</div>
     <input type="password" class="settings-input" id="ai-key-input" placeholder="sk-ant-...">
-    <button style="width:100%;padding:10px;border-radius:var(--rs);border:none;background:var(--blue);color:white;font-size:12px;font-weight:700;margin-bottom:6px" onclick="saveAiKey()">Enregistrer 🔒</button>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <button style="flex:1;padding:10px;border-radius:var(--rs);border:none;background:var(--blue);color:white;font-size:12px;font-weight:700" onclick="saveAiKey()">Enregistrer 🔒</button>
+      <button style="padding:10px 14px;border-radius:var(--rs);border:1px solid var(--green);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700" onclick="testAiKey()">Tester ✓</button>
+    </div>
     <div style="font-size:10px;color:var(--text3)" id="ai-key-status">🔒 Stockée uniquement sur ton appareil</div>
   </div>
   <div class="card" style="margin-bottom:12px">
@@ -1245,7 +1248,7 @@ window.addEventListener('load',async()=>{
   startRealTime();
 
   // ── UI STATUS ─────────────────────────────────────────────────────────────
-  if(localStorage.getItem('ts_ai_key')){
+  if(hasAiKey()){
     const si=document.getElementById('ai-key-input');
     if(si)si.placeholder='Clé enregistrée ✓';
     const ss=document.getElementById('ai-key-status');
@@ -1269,11 +1272,15 @@ window.addEventListener('load',async()=>{
   if(wInput&&wh)wInput.placeholder='✅ Webhook enregistré';
 
   // ── AUTO-LAUNCH : délais progressifs ────────────────────────────────────────
-  setTimeout(()=>runMacro(), 800);
+  // Fonctions IA uniquement si clé présente — évite les toasts d'erreur au démarrage
+  if(hasAiKey()){
+    setTimeout(()=>runMacro(), 800);
+    setTimeout(()=>{runBriefing();runActuEvents();}, 3000);
+    setTimeout(()=>runPepites(), 25000);
+  } else {
+    setTimeout(()=>runActuEvents(), 1000);
+  }
   setTimeout(()=>startScan(), 2000);
-  setTimeout(()=>runPepites(), 25000);
-  // Actualités chargées en arrière-plan
-  setTimeout(()=>{runBriefing();runActuEvents();}, 3000);
 });
 
 const SEARCH_CATEGORIES=[
@@ -1380,8 +1387,7 @@ async function renderFavoritesView(){
 
 async function runFavCoach(asset,sig,pos,el){
   if(!el)return;
-  const key=localStorage.getItem('ts_ai_key')||'TA_CLE_API_ICI';
-  if(!key||key==='TA_CLE_API_ICI'){el.style.display='none';return;}
+  if(!hasAiKey()){el.style.display='none';return;}
   el.style.display='block';
   el.innerHTML='<span class="cursor"></span>';
   let prompt;
@@ -1688,16 +1694,6 @@ function syncActuTab(){
   const src=document.getElementById('briefing-body');
   const dst=document.getElementById('briefing-body-actu');
   if(src&&dst&&src.innerHTML&&!src.innerHTML.includes('cursor'))dst.innerHTML=src.innerHTML;
-  // Sync macro
-  const srcText=document.getElementById('macro-mini-text');
-  const srcBadge=document.getElementById('macro-mini-badge');
-  const srcIcon=document.getElementById('macro-mini-icon');
-  const dstText=document.getElementById('macro-mini-text-actu');
-  const dstBadge=document.getElementById('macro-mini-badge-actu');
-  const dstIcon=document.getElementById('macro-mini-icon-actu');
-  if(srcText&&dstText)dstText.textContent=srcText.textContent;
-  if(srcBadge&&dstBadge)dstBadge.textContent=srcBadge.textContent;
-  if(srcIcon&&dstIcon)dstIcon.textContent=srcIcon.textContent;
   // Sync events
   const srcEv=document.getElementById('actu-events');
   const dstEv=document.getElementById('actu-events-full');
@@ -1707,8 +1703,13 @@ function syncActuTab(){
 function setTheme(t){
   document.documentElement.setAttribute('data-theme',t==='light'?'':t);
   localStorage.setItem('ts_theme',t);
+  // Topbar toggle buttons
   document.getElementById('btn-theme-light').className='theme-switch-btn'+(t==='light'?' active':'');
   document.getElementById('btn-theme-dark').className='theme-switch-btn'+(t==='dark'?' active':'');
+  // Settings theme picker buttons — mark the active one
+  document.querySelectorAll('.theme-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.t===t);
+  });
   // Update theme color meta
   document.querySelector('meta[name="theme-color"]').setAttribute('content',t==='dark'?'#080b14':'#ffffff');
 }
@@ -2251,14 +2252,14 @@ function openSimTrade(sym){
     status:'open',openDate:new Date().toLocaleDateString('fr-FR'),currentPrice:s.price
   });
   savePos();syncSave(positions[positions.length-1]);updatePortfolioUI();closeDetail();
-  showTab('portfolio',document.querySelectorAll('.tab')[4]);
+  showTab('portfolio',document.querySelector('.tab[onclick*="portfolio"]'));
   toast('💼 Trade ouvert — '+s.short,'Entrée à '+fp(entry,s.price)+' · '+amt.toFixed(0)+'€ investis','info');
 }
 
 function closeTrade(id){
   const pos=positions.find(p=>p.id===id);if(!pos)return;
   const s=signals.find(x=>x.sym===pos.sym);
-  const cp=s?s.price:pos.currentPrice;
+  const cp=(s?s.price:null)||pos.currentPrice||pos.entry;
   const pnl=(cp-pos.entry)*pos.shares*(pos.action==='sell'?-1:1);
   Object.assign(pos,{status:'closed',closePrice:cp,pnl,closeDate:new Date().toLocaleDateString('fr-FR')});
   savePos();syncSave(pos);
@@ -3109,7 +3110,7 @@ function updatePortfolioUI(){
   if(!open.length){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3);font-size:12px">Aucune position ouverte · Lance un scan puis clique "Simuler"</div>';return;}
 
   list.innerHTML=open.map(pos=>{
-    const cpnl=(pos.currentPrice-pos.entry)*pos.shares*(pos.action==='sell'?-1:1);
+    const cpnl=((pos.currentPrice||pos.entry)-pos.entry)*pos.shares*(pos.action==='sell'?-1:1);
     const ppct=(cpnl/pos.amount*100).toFixed(2);
     const isPos=cpnl>=0;
     return '<div class="pos-card swipeable" id="swipe-'+pos.id+'" style="cursor:pointer" onclick="openFocus('+pos.id+')">'
@@ -3145,13 +3146,51 @@ function saveCapital(){capital=parseFloat(document.getElementById('cap-input').v
 function saveObj(){objective=parseFloat(document.getElementById('obj-input').value)||10;localStorage.setItem('ts_obj',objective);document.getElementById('obj-set-lbl').textContent='+'+objective+'%';toast('Objectif mis à jour','+'+objective+'% ce mois','info');updatePortfolioUI();syncSettings();}
 function saveAiKey(){
   const k=document.getElementById('ai-key-input').value.trim();
-  if(!k)return;
+  if(!k){
+    toast('⚠️ Champ vide','Colle ta clé Claude (sk-ant-...)','warn');
+    return;
+  }
+  if(!k.startsWith('sk-ant-')||k.length<30){
+    document.getElementById('ai-key-status').textContent='❌ Format invalide — la clé doit commencer par sk-ant-';
+    document.getElementById('ai-key-status').style.color='var(--red)';
+    toast('❌ Clé invalide','La clé doit commencer par sk-ant-','warn');
+    return;
+  }
   localStorage.setItem('ts_ai_key',k);
   document.getElementById('ai-key-input').value='';
   document.getElementById('ai-key-input').placeholder='Clé enregistrée ✓';
   document.getElementById('ai-key-status').textContent='✅ Clé Claude active — IA fonctionnelle';
   document.getElementById('ai-key-status').style.color='var(--green)';
   toast('✅ Clé Claude sauvegardée','Coach IA, Briefing et Météo sont maintenant actifs','info');
+}
+async function testAiKey(){
+  const ss=document.getElementById('ai-key-status');
+  // Test the input field first, then fallback to saved key
+  const inputVal=document.getElementById('ai-key-input').value.trim();
+  const keyToTest=inputVal||getAiKey();
+  if(!keyToTest||!keyToTest.startsWith('sk-ant-')||keyToTest.length<30){
+    if(ss){ss.textContent='❌ Aucune clé valide à tester — saisis ou enregistre d\'abord ta clé';ss.style.color='var(--red)';}
+    return;
+  }
+  if(ss){ss.textContent='⏳ Test en cours…';ss.style.color='var(--text3)';}
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':keyToTest},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:10,messages:[{role:'user',content:'ok'}]})
+    });
+    if(res.ok){
+      if(ss){ss.textContent='✅ Clé valide et fonctionnelle !';ss.style.color='var(--green)';}
+      toast('✅ Connexion réussie','Clé Claude opérationnelle','info');
+    } else {
+      const err=await res.json().catch(()=>({}));
+      const msg=err.error?.message||'Erreur '+res.status;
+      if(ss){ss.textContent='❌ Clé refusée — '+msg;ss.style.color='var(--red)';}
+      toast('❌ Clé refusée',msg,'warn');
+    }
+  }catch(e){
+    if(ss){ss.textContent='⚠️ Impossible de contacter l\'API (réseau ?)';ss.style.color='var(--orange)';}
+  }
 }
 function saveBinKey(){
   const k=document.getElementById('bin-key').value.trim();
@@ -3461,11 +3500,12 @@ function togglePepiteEl(detailId,arrowId){
   if(a)a.textContent=open?'▾':'▴';
 }
 
-function simPepite(prefix,i,entry,tp,sl){
-  // Set 50% of recommended amount
+function simPepite(prefix,i,entry,tp,sl,pct){
   const el=document.getElementById('pepite-sim-amt-'+prefix+i);
   if(!el)return;
-  const current=parseFloat(el.value)||100;
+  const base=parseFloat(el.dataset.base)||parseFloat(el.value)||100;
+  el.dataset.base=el.dataset.base||el.value;// memorise montant recommandé au 1er appel
+  el.value=(base*(pct/100)).toFixed(0);
   updateSimPepite(prefix,i,entry,tp,sl);
 }
 
@@ -3545,9 +3585,18 @@ async function runActuEvents(){
   if(elFull)elFull.innerHTML=html;
 }
 
+function getAiKey(){
+  return (localStorage.getItem('ts_ai_key')||'').trim();
+}
+
+function hasAiKey(){
+  const k=getAiKey();
+  return k.length>20&&k.startsWith('sk-ant-');
+}
+
 async function callAI(prompt,maxTokens,stream){
-  const key=localStorage.getItem('ts_ai_key')||'TA_CLE_API_ICI';
-  if(!key||key==='TA_CLE_API_ICI'){
+  const key=getAiKey();
+  if(!hasAiKey()){
     toast('⚠️ Clé API manquante','Va dans Réglages → Clé API Claude','warn');
     throw new Error('Clé API manquante');
   }
@@ -3561,7 +3610,7 @@ async function callAI(prompt,maxTokens,stream){
     method:'POST',
     headers,
     body:JSON.stringify({
-      model:'claude-sonnet-4-5',
+      model:'claude-sonnet-4-6',
       max_tokens:maxTokens,
       stream:stream||false,
       messages:[{role:'user',content:prompt}]
