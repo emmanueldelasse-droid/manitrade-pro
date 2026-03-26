@@ -626,10 +626,10 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
       <button class="fc fc-wait" onclick="setFilter('wait',this)">🟡 Attendre</button>
       <button class="fc" id="fc-fav" onclick="setFilter('fav',this)" style="background:var(--orange-bg);border-color:#fed7aa;color:var(--orange)">⭐ Favoris</button>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
       <span style="font-size:10px;color:var(--text3)">Mode :</span>
-      <button id="btn-fast-scan" onclick="setScanMode('fast')" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;border:1px solid var(--green);background:var(--green-bg);color:var(--green)">⚡ Rapide (50)</button>
-      <button id="btn-full-scan" onclick="setScanMode('full')" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--bg);color:var(--text3)">🔍 Complet (200+)</button>
+      <button id="btn-fast-scan" onclick="setScanMode('fast')" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;border:1px solid var(--green);background:var(--green-bg);color:var(--green)">⚡ Rapide (34)</button>
+      <button id="btn-sectoriel-scan" onclick="setScanMode('sectoriel')" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--bg);color:var(--text3)">🌐 Sectoriel (80)</button>
     </div>
     <div class="pb"><div class="pf" id="pf"></div></div>
     <div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -850,7 +850,7 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
     <input type="url" class="settings-input" id="webhook-input" placeholder="https://script.google.com/macros/s/..." style="margin-bottom:8px;font-size:11px">
     <button onclick="saveWebhook()" style="width:100%;padding:10px;border-radius:var(--rs);border:none;background:var(--blue);color:white;font-size:12px;font-weight:700;margin-bottom:8px">💾 Enregistrer le Webhook</button>
     <button onclick="loadFromSheets()" style="width:100%;padding:10px;border-radius:var(--rs);border:1px solid var(--green);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700;margin-bottom:8px">⬇️ Charger depuis Sheets</button>
-    <button onclick="positions.forEach(p=>syncSave(p));toast('✅ Sync OK',positions.length+' trades envoyés','info')" style="width:100%;padding:10px;border-radius:var(--rs);border:1px solid var(--blue);background:var(--blue-bg);color:var(--blue);font-size:12px;font-weight:700;margin-bottom:8px">⬆️ Envoyer vers Sheets</button>
+    <button onclick="syncAllTrades()" style="width:100%;padding:10px;border-radius:var(--rs);border:1px solid var(--blue);background:var(--blue-bg);color:var(--blue);font-size:12px;font-weight:700;margin-bottom:8px">⬆️ Envoyer vers Sheets</button>
     <div style="font-size:10px;color:var(--text3)">📊 <a href="https://docs.google.com/spreadsheets/d/16th3fAKc3wq71Mfmuz4J_V9rZYspBCdRz5g-a9h7UGI" target="_blank" style="color:var(--blue)">Ouvrir ma Google Sheet ↗</a></div>
   </div>
 </div>
@@ -1138,7 +1138,69 @@ const ASSETS_FULL=[
 ];
 
 // scanMode contrôle quel ensemble d'actifs utiliser via getAllAssets()
-let scanMode='fast'; // 'fast' or 'full'
+let scanMode='fast'; // 'fast' | 'sectoriel' | 'full'
+
+// ── ASSETS SECTORIEL (~80 actifs) ─────────────────────────────────────────────
+// Principe : 1 leader + 1 alternatif décorrélé par secteur
+// Couvre les rotations sectorielles invisibles en mode rapide
+const ASSETS_SECTORIEL=[
+  ...ASSETS_FAST,
+  // ── SEMI-CONDUCTEURS (décorrélés de NVDA/AMD) ──────────────────────────────
+  {sym:'ASML',label:'ASML Holding',short:'ASML',cat:'Tech/IA',broker:'t212'},
+  {sym:'TSM',label:'TSMC',short:'TSM',cat:'Tech/IA',broker:'t212'},
+  {sym:'AVGO',label:'Broadcom',short:'AVGO',cat:'Tech/IA',broker:'t212'},
+  // ── TECH SaaS (cycle différent des GAFAM) ──────────────────────────────────
+  {sym:'CRM',label:'Salesforce',short:'CRM',cat:'Tech/IA',broker:'t212'},
+  {sym:'NOW',label:'ServiceNow',short:'NOW',cat:'Tech/IA',broker:'t212'},
+  {sym:'SNOW',label:'Snowflake',short:'SNOW',cat:'Tech/IA',broker:'t212'},
+  // ── DÉFENSE (absent du mode rapide) ────────────────────────────────────────
+  {sym:'LMT',label:'Lockheed Martin',short:'LMT',cat:'Défense',broker:'t212'},
+  {sym:'RTX',label:'RTX Corp',short:'RTX',cat:'Défense',broker:'t212'},
+  {sym:'NOC',label:'Northrop Grumman',short:'NOC',cat:'Défense',broker:'t212'},
+  {sym:'HO.PA',label:'Thales',short:'HO',cat:'Défense',broker:'t212'},
+  {sym:'SAF.PA',label:'Safran',short:'SAF',cat:'Aéro/Défense',broker:'t212'},
+  // ── LUXE EU élargi ──────────────────────────────────────────────────────────
+  {sym:'KER.PA',label:'Kering',short:'KER',cat:'Luxe',broker:'t212'},
+  {sym:'CFR.SW',label:'Richemont',short:'CFR',cat:'Luxe',broker:'t212'},
+  {sym:'RACE',label:'Ferrari',short:'RACE',cat:'Luxe',broker:'t212'},
+  {sym:'ADS.DE',label:'Adidas',short:'ADS',cat:'Luxe',broker:'t212'},
+  // ── SANTÉ élargie ───────────────────────────────────────────────────────────
+  {sym:'ABBV',label:'AbbVie',short:'ABBV',cat:'Santé',broker:'t212'},
+  {sym:'AZN.L',label:'AstraZeneca',short:'AZN',cat:'Santé',broker:'t212'},
+  {sym:'SAN.PA',label:'Sanofi',short:'SAN',cat:'Santé',broker:'t212'},
+  {sym:'NOVN.SW',label:'Novartis',short:'NOVN',cat:'Santé',broker:'t212'},
+  // ── BIOTECH (absent du mode rapide) ─────────────────────────────────────────
+  {sym:'MRNA',label:'Moderna',short:'MRNA',cat:'Biotech',broker:'t212'},
+  {sym:'REGN',label:'Regeneron',short:'REGN',cat:'Biotech',broker:'t212'},
+  // ── FINANCE élargie ─────────────────────────────────────────────────────────
+  {sym:'V',label:'Visa',short:'V',cat:'Finance',broker:'t212'},
+  {sym:'MA',label:'Mastercard',short:'MA',cat:'Finance',broker:'t212'},
+  {sym:'BNP.PA',label:'BNP Paribas',short:'BNP',cat:'Finance',broker:'t212'},
+  // ── CONSO DÉFENSIVE (absent du mode rapide) ─────────────────────────────────
+  {sym:'WMT',label:'Walmart',short:'WMT',cat:'Conso',broker:'t212'},
+  {sym:'MCD',label:'McDonald\'s',short:'MCD',cat:'Conso',broker:'t212'},
+  {sym:'COST',label:'Costco',short:'COST',cat:'Conso',broker:'t212'},
+  // ── ÉNERGIE VERTE (absent du mode rapide) ───────────────────────────────────
+  {sym:'NEE',label:'NextEra Energy',short:'NEE',cat:'Énergie Verte',broker:'t212'},
+  {sym:'ENPH',label:'Enphase Energy',short:'ENPH',cat:'Énergie Verte',broker:'t212'},
+  {sym:'FSLR',label:'First Solar',short:'FSLR',cat:'Énergie Verte',broker:'t212'},
+  // ── ETF SECTORIELS ──────────────────────────────────────────────────────────
+  {sym:'GLD',label:'Or ETF',short:'GLD',cat:'ETF',broker:'t212'},
+  {sym:'TLT',label:'Obligations US ETF',short:'TLT',cat:'ETF',broker:'t212'},
+  {sym:'IWM',label:'Russell 2000 ETF',short:'IWM',cat:'ETF',broker:'t212'},
+  {sym:'XLF',label:'Finance ETF',short:'XLF',cat:'ETF',broker:'t212'},
+  // ── CRYPTO DÉCORRÉLÉE ───────────────────────────────────────────────────────
+  {sym:'LINK-USD',label:'Chainlink',short:'LINK',cat:'Crypto',broker:'binance'},
+  {sym:'INJ-USD',label:'Injective',short:'INJ',cat:'Crypto',broker:'binance'},
+  {sym:'ARB-USD',label:'Arbitrum',short:'ARB',cat:'Crypto',broker:'binance'},
+  // ── FOREX (absent du mode rapide) ───────────────────────────────────────────
+  {sym:'EURUSD=X',label:'Euro/Dollar',short:'EUR/USD',cat:'Forex',broker:'t212'},
+  {sym:'GBPUSD=X',label:'Livre/Dollar',short:'GBP/USD',cat:'Forex',broker:'t212'},
+  // ── INDUSTRIE & MATIÈRES PREMIÈRES ──────────────────────────────────────────
+  {sym:'CAT',label:'Caterpillar',short:'CAT',cat:'Industrie',broker:'t212'},
+  {sym:'XOM',label:'ExxonMobil',short:'XOM',cat:'Énergie',broker:'t212'},
+  {sym:'SI=F',label:'Argent',short:'XAG',cat:'Commodités',broker:'t212'},
+];
 
 const BEST_HOURS={'Crypto':'24h/24 — pics à 14h-16h et 20h-22h','Tech/IA':'15h30-17h30 (NYSE)','Énergie':'9h-11h (London) et 15h30-17h','Santé':'15h30-17h (NYSE)','Finance':'15h30-17h (NYSE)','Défense':'15h30-17h (NYSE)','Industrie':'15h30-17h (NYSE)','Conso':'15h30-17h (NYSE)','Forex':'8h-12h (London) et 15h30-17h','Commodités':'14h30-16h (COMEX)','ETF':'15h30-17h (NYSE)','Luxe':'15h30-17h (Paris/NYSE)','Personnel':'15h30-17h'};
 const CORR_GROUPS=[['BTC-USD','ETH-USD','SOL-USD','BNB-USD','XRP-USD','AVAX-USD'],['NVDA','AMD','TSM','AVGO'],['COIN','MSTR']];
@@ -1149,8 +1211,14 @@ let customAssets=JSON.parse(localStorage.getItem('ts_custom_assets')||'[]');
 let favorites=JSON.parse(localStorage.getItem('ts_favorites')||'[]');
 
 function getAllAssets(){
-  const base=scanMode==='full'?ASSETS_FULL:ASSETS_FAST;
-  return [...base,...customAssets];
+  let base;
+  if(scanMode==='sectoriel') base=ASSETS_SECTORIEL;
+  else if(scanMode==='full') base=ASSETS_FULL;
+  else base=ASSETS_FAST;
+  // Déduplique : customAssets en priorité, puis base
+  const seen=new Set(customAssets.map(a=>a.sym));
+  const deduped=base.filter(a=>!seen.has(a.sym));
+  return [...customAssets,...deduped];
 }
 function isFavorite(sym){return favorites.includes(sym);}
 function toggleFavorite(sym){
@@ -1356,7 +1424,19 @@ window.addEventListener('load',async()=>{
   } else {
     setTimeout(()=>runActuEvents(), 1000);
   }
-  setTimeout(()=>startScan(), 2000);
+  // Auto-scan au démarrage — seulement si marché ouvert ou crypto (24h/24)
+  // Évite de gaspiller le quota API les week-ends et la nuit
+  setTimeout(()=>{
+    const ms=getMarketStatus();
+    if(ms.status==='ouvert'||ms.status==='pre'){
+      startScan();
+    } else {
+      // Marché fermé : affiche statut sans scanner
+      document.getElementById('scan-info').textContent='Marché fermé — scan au prochain ouverture';
+      document.getElementById('sg').innerHTML='<div class="empty-state"><div class="empty-icon">🌙</div><div class="empty-text">Marché fermé<br><span style="font-size:10px">'+ms.label+'</span></div></div>';
+      toast('💤 Marché fermé',ms.label+' — Le scan se lancera à l\'ouverture','info');
+    }
+  }, 2000);
 });
 
 const SEARCH_CATEGORIES=[
@@ -1462,7 +1542,11 @@ async function renderFavoritesView(){
       posEl.innerHTML='<div style="background:'+(ip?'var(--green-bg)':'var(--red-bg)')+';border:1px solid '+(ip?'var(--green-light)':'var(--red-light)')+';border-radius:var(--rs);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:'+(ip?'var(--green)':'var(--red)')+'">📊 Position ouverte</span><span style="font-family:var(--mono);font-size:14px;font-weight:800;color:'+(ip?'var(--green)':'var(--red)')+'">'+(ip?'+':'')+pnl.toFixed(2)+'€</span></div>';
     }
     const coachEl=document.getElementById('fav-coach-'+id);
-    if(coachEl)runFavCoach(asset,sig,pos,coachEl);
+    if(coachEl){
+      // Délai échelonné pour éviter les appels Claude en rafale (rate limit)
+      const idx=favAssets.indexOf(asset);
+      setTimeout(()=>runFavCoach(asset,sig,pos,coachEl),idx*1500);
+    }
   }
 }
 
@@ -1806,7 +1890,11 @@ function setTheme(t){
 }
 
 function applyTheme(t){setTheme(t);}
-function toggleThemePicker(){}
+function toggleThemePicker(){
+  const p=document.getElementById('theme-picker-wrap');
+  if(!p)return;
+  p.style.display=p.style.display==='none'||!p.style.display?'block':'none';
+}
 function toggleNotif(){if(!notifsOn){Notification.requestPermission().then(p=>{if(p==='granted'){notifsOn=true;document.getElementById('notif-btn').textContent='🔔✓';toast('Alertes activées','Notifications TP/SL activées','info');}});}else{notifsOn=false;document.getElementById('notif-btn').textContent='🔔';}}
 function notify(title,body,type){if(notifsOn&&Notification.permission==='granted')new Notification(title,{body});toast(title,body,type);}
 function toast(t,m,type){const c=document.getElementById('toasts');const el=document.createElement('div');el.className='toast '+type;el.innerHTML='<div class="toast-sym">'+t+'</div><div class="toast-msg">'+m+'</div>';el.onclick=()=>el.remove();c.appendChild(el);setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400);},7000);}
@@ -1837,7 +1925,65 @@ function fgScore(closes,rsiL,volR){
   const trend=n>=5?(closes[n-1]>closes[n-5]?30:0):0;
   return Math.min(100,Math.max(0,Math.round((rsiL/100)*40+(volR>1?30:volR*30)+trend)));
 }
-// ── PRIX UNIFIÉS — Architecture optimisée quota API ──────────────────────────
+// ── SYSTÈME DE DIAGNOSTIC D'ERREURS API ──────────────────────────────────────
+// Évite les doublons de notifications — une seule alerte par type d'erreur par scan
+let tdErrorNotified={};// {quota:bool, webhook:bool, proxy:bool, yahoo:bool}
+let scanErrorStats={tdFail:0,yahooFail:0,total:0};// compteurs d'erreurs pendant le scan
+
+function notifyAPIError(type){
+  if(tdErrorNotified[type])return;// évite le spam
+  tdErrorNotified[type]=true;
+  switch(type){
+    case 'quota':
+      toast('⚠️ Quota Twelve Data épuisé',
+        TD_KEYS.length===0
+          ? 'Aucune clé configurée — va dans Réglages → Clés API Twelve Data'
+          : 'Toutes les clés ('+TD_KEYS.length+') sont épuisées — quota journalier atteint (800 req/clé). Réessaie demain ou ajoute une clé.',
+        'warn');
+      break;
+    case 'webhook':
+      toast('⚠️ Webhook non configuré',
+        'Sans webhook Google Apps Script, les données actions/ETF sont indisponibles. Va dans Réglages → Google Sheets & Webhook.',
+        'warn');
+      break;
+    case 'proxy503':
+      toast('⚠️ Proxy indisponible (503)',
+        'Le serveur Apps Script ne répond pas. Vérifie ton déploiement Google Apps Script.',
+        'warn');
+      break;
+    case 'yahoo':
+      toast('⚠️ Yahoo Finance inaccessible',
+        'Le fallback Yahoo ne répond pas. Vérifie ta connexion internet.',
+        'warn');
+      break;
+    case 'nocredits':
+      toast('🔴 Aucune donnée disponible',
+        'Ni Twelve Data ni Yahoo ne répondent. Vérifie ta connexion et tes clés API dans Réglages.',
+        'sell');
+      break;
+  }
+}
+
+function resetScanErrors(){
+  tdErrorNotified={};
+  scanErrorStats={tdFail:0,yahooFail:0,total:0};
+}
+
+function reportScanErrors(ok,total){
+  if(total===0)return;
+  const failRate=(total-ok)/total;
+  if(ok===0){
+    // 0% succès — problème critique
+    if(!WEBHOOK){notifyAPIError('webhook');}
+    else if(tdAllExhausted){notifyAPIError('quota');}
+    else{notifyAPIError('nocredits');}
+  } else if(failRate>0.5){
+    // Plus de 50% d'échecs — avertissement
+    toast('⚠️ Scan partiel — '+ok+'/'+total+' actifs',
+      'Certains actifs sont indisponibles. '+(tdAllExhausted?'Quota TD épuisé.':'Vérifie ta connexion et tes clés.'),
+      'warn');
+  }
+}
 // Crypto   → Binance direct → CoinGecko direct (0 appel TD)
 // Actions US/ETF → Yahoo direct → TD si CORS échoue
 // Actions EU (.PA .L .DE .SW .MI) → TD direct → Yahoo via WEBHOOK
@@ -1855,24 +2001,32 @@ function rotateTDKey(){
   if(tdKeyIndex>=TD_KEYS.length){
     tdAllExhausted=true;
     console.warn('Twelve Data — toutes les clés épuisées, bascule sur Yahoo Finance');
+    // Notif utilisateur — quota épuisé
+    notifyAPIError('quota');
   } else {
     console.warn('Twelve Data — clé épuisée, rotation vers clé '+(tdKeyIndex+1));
+    toast('🔄 Clé Twelve Data épuisée','Rotation vers la clé '+(tdKeyIndex+1),'warn');
   }
 }
-function resetTDKeys(){tdKeyIndex=0;tdAllExhausted=false;}
+function resetTDKeys(){tdKeyIndex=0;tdAllExhausted=false;tdErrorNotified={};}
 const TD_BASE='https://api.twelvedata.com';
 
 // Détecte si un symbole est un actif européen (nécessite TD, CORS Yahoo peu fiable)
 function isEUAsset(sym){
+  if(!sym||typeof sym!=='string')return false;
   return sym.endsWith('.PA')||sym.endsWith('.L')||sym.endsWith('.DE')||sym.endsWith('.SW')||sym.endsWith('.MI');
 }
 // Détecte si un symbole est US (Yahoo direct OK)
 function isUSAsset(sym){
+  if(!sym||typeof sym!=='string')return false;
   return !sym.includes('-USD')&&!sym.includes('=X')&&!sym.includes('=F')&&!isEUAsset(sym);
 }
 
-// Yahoo Finance direct (sans proxy) — fonctionne bien pour actifs US sur desktop/navigateur moderne
+// Yahoo Finance direct — BLOQUÉ par CORS sur GitHub Pages / origines cross-domain
+// Conservé uniquement pour usage local (localhost) ou navigateurs permissifs
+// Sur GitHub Pages → utiliser getYahooPriceViaProxy ou getTDPriceDirect
 async function getYahooPriceDirect(sym,timeout=6000){
+  if(!sym)return null;
   try{
     const url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1d&interval=1m';
     const res=await fetch(url,{signal:AbortSignal.timeout(timeout)});
@@ -1887,15 +2041,20 @@ async function getYahooPriceDirect(sym,timeout=6000){
 
 // TD via proxy (WEBHOOK) — pour actifs EU et fallback général
 async function getTDPriceDirect(sym,timeout=10000){
-  if(!WEBHOOK||TD_KEYS.length===0)return null;
+  if(!WEBHOOK||TD_KEYS.length===0){
+    notifyAPIError(TD_KEYS.length===0?'quota':'webhook');
+    return null;
+  }
   if(tdAllExhausted)return null;
   const tdSym=toTDSymbol(sym);
   const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY();
   try{
     const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(timeout)});
+    if(res.status===503){notifyAPIError('proxy503');return null;}
     if(res.ok){
       const d=await res.json();
       if(d.code===429){rotateTDKey();return null;}
+      if(d.code===401||d.code===403){notifyAPIError('quota');return null;}
       if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
     }
   }catch(e){}
@@ -1904,16 +2063,21 @@ async function getTDPriceDirect(sym,timeout=10000){
 
 // Yahoo via proxy WEBHOOK — fallback EU quand TD échoue
 async function getYahooPriceViaProxy(sym,timeout=10000){
-  if(!WEBHOOK)return null;
+  if(!WEBHOOK){notifyAPIError('webhook');return null;}
   try{
     const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1d&interval=1m';
     const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(timeout)});
+    if(res.status===503){notifyAPIError('proxy503');return null;}
     if(res.ok){
       const d=await res.json();
       const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
       if(price&&price>0)return price;
+      // Yahoo répond mais sans données
+      if(d?.chart?.error)notifyAPIError('yahoo');
     }
-  }catch(e){}
+  }catch(e){
+    if(e.name==='TimeoutError')notifyAPIError('yahoo');
+  }
   return null;
 }
 
@@ -1953,10 +2117,15 @@ async function getPrice(sym){
     return await getYahooPriceViaProxy(sym);
   }
 
-  // ACTIONS US & ETF : Yahoo direct d'abord (économise quota TD) → TD si CORS → Yahoo proxy
-  const yhDirect=await getYahooPriceDirect(sym);
-  if(yhDirect)return yhDirect;
-  // CORS a échoué → essai TD
+  // ACTIONS US & ETF : TD d'abord (CORS Yahoo bloqué sur GitHub Pages) → Yahoo proxy en fallback
+  // Détecte si on est sur GitHub Pages ou autre origine cross-domain
+  const isGHPages=location.hostname.includes('github.io')||location.hostname.includes('netlify')||location.hostname.includes('vercel');
+  if(!isGHPages){
+    // Seulement si hébergement local → Yahoo direct sans CORS
+    const yhDirect=await getYahooPriceDirect(sym);
+    if(yhDirect)return yhDirect;
+  }
+  // GitHub Pages / PWA → TD direct, puis Yahoo via proxy
   const tdPrice=await getTDPriceDirect(sym);
   if(tdPrice)return tdPrice;
   // Dernier recours : Yahoo via proxy
@@ -1998,41 +2167,21 @@ async function getTDPrice(sym){return getPrice(sym);}
 
 // ── SÉRIE HISTORIQUE POUR LE SCAN ─────────────────────────────────────────────
 async function getTDTimeSeries(sym,outputsize=90){
-  // Pour actifs US : essai Yahoo direct d'abord (économise quota TD)
-  if(isUSAsset(sym)){
-    try{
-      const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=3mo&interval=1d';
-      const res=await fetch(yhUrl,{signal:AbortSignal.timeout(8000)});
-      if(res.ok){
-        const parsed=await res.json();
-        const result=parsed?.chart?.result?.[0];
-        if(result){
-          const q=result.indicators.quote[0];
-          const idx=q.close.map((_,i)=>i).filter(i=>q.close[i]!=null);
-          if(idx.length>=20){
-            return{
-              closes:idx.map(i=>q.close[i]),
-              highs:idx.map(i=>q.high[i]||q.close[i]),
-              lows:idx.map(i=>q.low[i]||q.close[i]),
-              vols:idx.map(i=>q.volume[i]||0),
-            };
-          }
-        }
-      }
-    }catch(e){}
-    // CORS échoué → TD
-  }
+  if(!sym)throw new Error('Symbole manquant');
 
-  // Actifs EU, Forex, Commodités ou fallback US : Twelve Data via proxy
+  // Actifs US, EU, Forex, Commodités → Twelve Data via proxy WEBHOOK
+  // Yahoo direct est bloqué par CORS depuis GitHub Pages / PWA — on ne l'essaie plus ici
   if(WEBHOOK&&TD_KEYS.length>0&&!tdAllExhausted){
     const tdSym=toTDSymbol(sym);
     const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY()});
     const tdUrl=TD_BASE+'/time_series?'+params.toString();
     try{
       const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
-      if(res.ok){
+      if(res.status===503){notifyAPIError('proxy503');}
+      else if(res.ok){
         const d=await res.json();
         if(d.code===429){rotateTDKey();}
+        else if(d.code===401||d.code===403){notifyAPIError('quota');}
         else if(d.values&&d.values.length){
           const values=d.values.reverse();
           return{
@@ -2044,6 +2193,10 @@ async function getTDTimeSeries(sym,outputsize=90){
         }
       }
     }catch(e){}
+  } else if(!WEBHOOK){
+    notifyAPIError('webhook');
+  } else if(TD_KEYS.length===0){
+    notifyAPIError('quota');
   }
   throw new Error('Impossible de récupérer les données pour '+sym);
 }
@@ -2054,6 +2207,7 @@ async function fetchTD(endpoint,params={}){
   const p=new URLSearchParams({...params,apikey:TD_KEY()});
   const url=TD_BASE+endpoint+'?'+p.toString();
   const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(10000)});
+  if(res.status===503){notifyAPIError('proxy503');throw new Error('Proxy 503');}
   if(!res.ok)throw new Error('Proxy HTTP '+res.status);
   const d=await res.json();
   if(d.status==='error')throw new Error('TD: '+d.message);
@@ -2072,19 +2226,13 @@ async function getTDPrices(syms){
 // Suppression des anciens proxys défaillants
 const PROXIES=[];
 async function fetchData(url,timeout=8000){
-  // Essai Yahoo direct d'abord si l'URL est Yahoo (évite WEBHOOK si vide)
-  if(url.includes('finance.yahoo.com')&&!url.includes('WEBHOOK')){
-    try{
-      const res=await fetch(url,{signal:AbortSignal.timeout(timeout)});
-      if(res.ok){const d=await res.json();if(d.values||d.chart)return d;}
-    }catch(e){}
-  }
-  // Via Apps Script (WEBHOOK) — nécessaire pour actifs EU / contournement CORS
-  if(!WEBHOOK)throw new Error('WEBHOOK non configuré');
+  // Via Apps Script (WEBHOOK) — nécessaire pour contournement CORS
+  if(!WEBHOOK){notifyAPIError('webhook');throw new Error('Données indisponibles');}
   try{
     const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(timeout)});
+    if(res.status===503){notifyAPIError('proxy503');throw new Error('Proxy 503');}
     if(res.ok){const d=await res.json();if(d.values||d.chart)return d;const txt=JSON.stringify(d);return JSON.parse(txt);}
-  }catch(e){}
+  }catch(e){if(e.message!=='Données indisponibles'&&e.message!=='Proxy 503'){}else throw e;}
   throw new Error('Données indisponibles');
 }
 
@@ -2095,23 +2243,13 @@ async function analyzeAsset(asset){
     const td=await getTDTimeSeries(asset.sym,90);
     closes=td.closes;highs=td.highs;lows=td.lows;vols=td.vols;
   }catch(e){
-    // Fallback Yahoo : direct pour US, via proxy pour EU
+    // Fallback Yahoo via proxy WEBHOOK (Yahoo direct bloqué par CORS sur GitHub Pages)
     try{
+      if(!WEBHOOK)return null;
       const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(asset.sym)+'?range=3mo&interval=1d';
-      let parsed=null;
-      if(isUSAsset(asset.sym)){
-        // Yahoo direct (pas de CORS sur actifs US en général)
-        try{
-          const r=await fetch(yhUrl,{signal:AbortSignal.timeout(7000)});
-          if(r.ok)parsed=await r.json();
-        }catch(e2){}
-      }
-      // Si Yahoo direct échoue ou actif EU → proxy
-      if(!parsed&&WEBHOOK){
-        const r2=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(8000)});
-        if(r2.ok)parsed=await r2.json();
-      }
-      if(!parsed)return null;
+      const r=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(10000)});
+      if(!r.ok)return null;
+      const parsed=await r.json();
       const res=parsed?.chart?.result?.[0];if(!res)return null;
       const q=res.indicators.quote[0];
       const idx=q.close.map((_,i)=>i).filter(i=>q.close[i]!=null);
@@ -2183,6 +2321,7 @@ async function analyzeAsset(asset){
 async function startScan(){
   if(isScanning)return;
   isScanning=true;signals=[];
+  resetScanErrors();// reset compteurs et flags d'erreur pour ce nouveau scan
   const btn=document.getElementById('scan-btn');btn.disabled=true;btn.textContent='⏳…';
   document.getElementById('sg').innerHTML='<div style="grid-column:span 2">'+Array(4).fill('<div class="skel" style="margin-bottom:8px"></div>').join('')+'</div>';
   let done=0,ok=0;
@@ -2203,18 +2342,24 @@ async function startScan(){
   document.getElementById('pf').style.width='100%';setTimeout(()=>document.getElementById('pf').style.width='0%',800);
   const strong=signals.filter(s=>s.action==='buy').length;
   document.getElementById('scan-info').textContent=strong+' opportunités · '+ok+' analysés';
+  // Diagnostic d'erreurs : avertit si trop d'actifs ont échoué
+  reportScanErrors(ok,SCAN_ASSETS.length);
   if(ok===0){document.getElementById('sg').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text"><strong>Aucune donnée</strong><br>Désactive ton bloqueur de pub<br>et essaie en navigation privée</div></div>';}
   btn.disabled=false;btn.textContent='↻ Rescanner';isScanning=false;
-  // Mode rapide : re-scan auto toutes les 60min. Mode complet : PAS de re-scan auto (économie quota TD)
+  // ── Sync immédiat des prix du scan vers les positions ouvertes ───────────────
+  // Le scan vient de récupérer les prix → on les propage aux positions sans attendre 2min
+  if(positions.some(p=>p.status==='open')){
+    await refreshOpenPositions();
+  }
+  // Mode rapide : re-scan auto toutes les 60min. Mode sectoriel : PAS de re-scan auto
   if(scanMode==='fast'){
     startCd(3600);
     clearInterval(scanTimer);
     scanTimer=setInterval(()=>startScan(),3600000);
   } else {
-    // Mode complet : pas de countdown ni re-scan auto
+    // Mode sectoriel : manuel uniquement — économise le quota TD
     clearInterval(scanTimer);
     document.getElementById('countdown').textContent='Manuel';
-    toast('✅ Scan complet terminé','Re-scan manuel uniquement en mode complet — économise le quota API','info');
   }
 }
 
@@ -2294,7 +2439,7 @@ function openDetail(sym){
 
     +(s.tp1?'<div class="lv-row">'
     +'<div class="lv-box lv-entry"><div class="lv-lbl">📍 Entre à</div><div class="lv-price">'+fp(s.entry,s.price)+'</div><div class="lv-sub">Prix actuel</div></div>'
-    +'<div class="lv-box lv-tp"><div class="lv-lbl">🎯 Objectif</div><div class="lv-price">'+fp(s.tp1,s.price)+'</div><div class="lv-sub">R/R '+s.rr?.toFixed(1)+':1</div></div>'
+    +'<div class="lv-box lv-tp"><div class="lv-lbl">🎯 Objectif</div><div class="lv-price">'+fp(s.tp1,s.price)+'</div><div class="lv-sub">R/R '+(s.rr!=null?s.rr.toFixed(1):'—')+':1</div></div>'
     +'<div class="lv-box lv-sl"><div class="lv-lbl">🛡️ Stop Loss</div><div class="lv-price">'+fp(s.sl,s.price)+'</div><div class="lv-sub">Sortie immédiate</div></div>'
     +'</div>':'')
 
@@ -2304,10 +2449,10 @@ function openDetail(sym){
     +'<div class="ind-label" style="color:'+bbColor+'">'+bbDesc+'</div></div>'
 
     +'<div class="ind-box"><div class="ind-title">Stochastique RSI</div>'
-    +'<div class="slider-track" style="background:linear-gradient(to right,var(--green),var(--orange),var(--red));margin-bottom:6px"><div class="slider-needle" style="left:'+s.stochL.toFixed(0)+'%"></div></div>'
+    +'<div class="slider-track" style="background:linear-gradient(to right,var(--green),var(--orange),var(--red));margin-bottom:6px"><div class="slider-needle" style="left:'+(s.stochL!=null?Math.min(100,Math.max(0,s.stochL)).toFixed(0):50)+'%"></div></div>'
     +'<div class="slider-labels"><span>Survendu</span><span>Neutre</span><span>Suracheté</span></div>'
-    +'<div class="ind-label" style="color:'+(s.stochL<30?'var(--green)':s.stochL>70?'var(--red)':'var(--orange)')+'">'+s.stochL.toFixed(0)+'/100</div>'
-    +'<div class="ind-desc">'+(s.stochL<30?'✅ Zone d\'achat':s.stochL>70?'⚠️ Zone de vente':'Momentum neutre')+'</div></div>'
+    +'<div class="ind-label" style="color:'+((s.stochL??50)<30?'var(--green)':(s.stochL??50)>70?'var(--red)':'var(--orange)')+'">'+(s.stochL!=null?s.stochL.toFixed(0):'—')+'/100</div>'
+    +'<div class="ind-desc">'+((s.stochL??50)<30?'✅ Zone d\'achat':(s.stochL??50)>70?'⚠️ Zone de vente':'Momentum neutre')+'</div></div>'
 
     +'<div class="ind-box"><div class="ind-title">Fibonacci</div>'
     +'<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:4px">'
@@ -2467,7 +2612,7 @@ function quickPosition(sym){
   positions.push({
     id:Date.now(),sym,short:s.short,label:s.label,cat:s.cat,broker:s.broker,
     action:s.action,entry:s.entry,tp1:s.tp1,tp2:s.tp2,sl:s.sl,
-    amount:amt,shares:amt/s.entry,emotion:currentEmo,
+    amount:amt,shares:s.entry>0?amt/s.entry:0,emotion:currentEmo,
     status:'open',openDate:new Date().toLocaleDateString('fr-FR'),currentPrice:s.price
   });
   savePos();syncSave(positions[positions.length-1]);updatePortfolioUI();
@@ -2500,7 +2645,7 @@ function openSimTrade(sym){
   positions.push({
     id:Date.now(),sym,short:s.short,label:s.label,cat:s.cat,broker:s.broker,
     action:s.action,entry,tp1:tp,tp2:tp*1.05,sl,
-    amount:amt,shares:amt/entry,emotion:currentEmo,
+    amount:amt,shares:entry>0?amt/entry:0,emotion:currentEmo,
     status:'open',openDate:new Date().toLocaleDateString('fr-FR'),currentPrice:s.price
   });
   savePos();syncSave(positions[positions.length-1]);updatePortfolioUI();closeDetail();
@@ -2520,7 +2665,11 @@ function closeTrade(id){
   updatePortfolioUI();
 }
 
-function savePos(){localStorage.setItem('ts_pos',JSON.stringify(positions));}
+function savePos(){
+  // Filtre les positions corrompues (sym undefined/null) avant la sauvegarde
+  positions=positions.filter(p=>p&&p.sym&&p.id);
+  localStorage.setItem('ts_pos',JSON.stringify(positions));
+}
 
 // ── BINANCE VIA APPS SCRIPT ───────────────────────────────────────────────────
 function getBinanceKey(){return localStorage.getItem('ts_bin_key')||'';}
@@ -2577,6 +2726,12 @@ function showBinanceBalance(balances){
 }
 const WEBHOOK_DEFAULT='';
 let WEBHOOK=localStorage.getItem('ts_webhook')||WEBHOOK_DEFAULT;
+
+function syncAllTrades(){
+  if(!WEBHOOK){toast('⚠️ Webhook non configuré','Configure ton URL Google Apps Script dans Réglages','warn');return;}
+  positions.forEach(p=>syncSave(p));
+  toast('✅ Sync OK',positions.length+' trade(s) envoyé(s)','info');
+}
 
 function saveWebhook(){
   const val=document.getElementById('webhook-input').value.trim();
@@ -2677,16 +2832,29 @@ async function refreshOpenPositions(){
   if(!open.length)return;
   const cryptos=open.filter(p=>p.broker==='binance');
   const others=open.filter(p=>p.broker!=='binance');
-  // Séparer actifs EU (TD) des actifs US (Yahoo direct)
   const euPositions=others.filter(p=>isEUAsset(p.sym));
   const usPositions=others.filter(p=>!isEUAsset(p.sym));
   let updated=0;
 
-  // ── CRYPTO via Binance direct → CoinGecko (0 appel TD) ──────────────────
+  // ── ÉTAPE 1 : Utilise les prix déjà en mémoire depuis le dernier scan ────────
+  // signals[] contient les prix les plus récents — évite des appels réseau inutiles
+  for(const pos of open){
+    const sig=signals.find(s=>s.sym===pos.sym);
+    if(sig&&sig.price&&sig.price>0&&sig.price!==pos.currentPrice){
+      pos.currentPrice=sig.price;
+      if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
+      priceHistory[pos.sym].push(sig.price);
+      if(priceHistory[pos.sym].length>60)priceHistory[pos.sym].shift();
+      autoCloseCheck(pos,sig.price);
+      updated++;
+    }
+  }
+
+  // ── ÉTAPE 2 : CRYPTO via Binance direct → CoinGecko (0 appel TD) ────────────
   for(const pos of cryptos){
     try{
       const price=await getPrice(pos.sym);
-      if(price&&price>0){
+      if(price&&price>0&&price!==pos.currentPrice){
         pos.currentPrice=price;
         if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
         priceHistory[pos.sym].push(price);
@@ -2697,14 +2865,11 @@ async function refreshOpenPositions(){
     }catch(e){}
   }
 
-  // ── ACTIONS US via Yahoo direct (économise quota TD) ─────────────────────
+  // ── ÉTAPE 3 : ACTIONS US → TD via proxy (CORS bloqué sur GitHub Pages) ──────
   for(const pos of usPositions){
     try{
-      // Yahoo direct d'abord — 0 appel TD si CORS OK
-      let price=await getYahooPriceDirect(pos.sym,5000);
-      // Si CORS bloqué → TD
-      if(!price)price=await getTDPriceDirect(pos.sym);
-      if(price&&price>0){
+      const price=await getTDPriceDirect(pos.sym);
+      if(price&&price>0&&price!==pos.currentPrice){
         pos.currentPrice=price;
         if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
         priceHistory[pos.sym].push(price);
@@ -2715,16 +2880,16 @@ async function refreshOpenPositions(){
     }catch(e){}
   }
 
-  // ── ACTIONS EU via TD — refresh toutes les 5min seulement (économie quota) ─
+  // ── ÉTAPE 4 : ACTIONS EU via TD — toutes les 5min (économie quota) ───────────
   const now=Date.now();
-  const EU_REFRESH_INTERVAL=5*60*1000;// 5 minutes
+  const EU_REFRESH_INTERVAL=5*60*1000;
   if(euPositions.length&&(now-lastEURefreshTime)>=EU_REFRESH_INTERVAL){
     lastEURefreshTime=now;
     for(const pos of euPositions){
       try{
         const price=await getTDPriceDirect(pos.sym);
         const finalPrice=price||(await getYahooPriceViaProxy(pos.sym));
-        if(finalPrice&&finalPrice>0){
+        if(finalPrice&&finalPrice>0&&finalPrice!==pos.currentPrice){
           pos.currentPrice=finalPrice;
           if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
           priceHistory[pos.sym].push(finalPrice);
@@ -2736,8 +2901,11 @@ async function refreshOpenPositions(){
     }
   }
 
+  // ── Toujours mettre à jour l'UI — même si aucun nouveau prix réseau ──────────
+  // Les prix du scan (étape 1) ou les currentPrice existants suffisent à afficher le P&L
+  savePos();updatePortfolioUI();
   if(updated>0){
-    savePos();updatePortfolioUI();updateLastUpdateTime();
+    updateLastUpdateTime();
     const btn=document.getElementById('scan-btn');
     if(btn&&!isScanning){
       const orig=btn.textContent;
@@ -2746,6 +2914,8 @@ async function refreshOpenPositions(){
     }
     const focusId=parseInt(document.getElementById('pos-focus').dataset.posId||'0');
     if(focusId){const fp2=positions.find(p=>p.id===focusId);if(fp2&&fp2.status==='open')updateFocusOverlay(fp2);}
+  } else if(open.some(p=>p.broker!=='binance')&&!WEBHOOK){
+    notifyAPIError('webhook');
   }
 }
 
@@ -3251,7 +3421,7 @@ function updateFocusOverlay(pos){
   if(rrLive){const rr=Math.abs(tp-price)/Math.abs(price-sl);rrLive.textContent='R/R '+rr.toFixed(1)+':1';}
 
   // Infos
-  document.getElementById('focus-amount').textContent=pos.amount.toFixed(0)+'€';
+  document.getElementById('focus-amount').textContent=(pos.amount||0).toFixed(0)+'€';
   document.getElementById('focus-date').textContent=pos.openDate||'—';
   document.getElementById('focus-emo').textContent=pos.emotion||'—';
   document.getElementById('focus-trailing').style.display=pos.trailingActive?'inline-flex':'none';
@@ -3317,6 +3487,9 @@ function drawFocusChart(pos){
 function closeFocusHalf(){
   const id=parseInt(document.getElementById('pos-focus').dataset.posId||'0');
   const pos=positions.find(p=>p.id===id);if(!pos)return;
+  // Guard contre double appel — pos.halfClosed déjà true signifie déjà fermé à 50%
+  if(pos.halfClosed){toast('⚠️ Déjà fermé à 50%','Cette position a déjà été réduite de moitié','warn');return;}
+  if(pos.shares<=0||pos.amount<=0){toast('⚠️ Position vide','Aucune part restante à fermer','warn');return;}
   const price=pos.currentPrice||pos.entry;
   const mult=pos.action==='sell'?-1:1;
   const halfPnl=(price-pos.entry)*(pos.shares*0.5)*mult;
@@ -3415,7 +3588,7 @@ function updatePortfolioUI(){
       +'<div class="pos-det">'
       +'<div class="pos-d"><div class="pos-d-lbl">Entrée</div><div class="pos-d-val">'+fp(pos.entry,pos.entry)+'</div></div>'
       +'<div class="pos-d"><div class="pos-d-lbl">Actuel</div><div class="pos-d-val" style="color:'+(isPos?'var(--green)':'var(--red)')+'">'+fp(pos.currentPrice||pos.entry,pos.entry)+'</div></div>'
-      +'<div class="pos-d"><div class="pos-d-lbl">Montant</div><div class="pos-d-val">'+pos.amount.toFixed(0)+'€</div></div>'
+      +'<div class="pos-d"><div class="pos-d-lbl">Montant</div><div class="pos-d-val">'+(pos.amount||0).toFixed(0)+'€</div></div>'
       +'</div>'
       +(()=>{const mi=getMarketInfoForAsset(pos.cat,pos.sym);return '<div style="font-size:10px;margin-top:4px;color:'+(mi.open?'var(--green)':'var(--text3)')+'">'+mi.label+(mi.next?' · '+mi.next:'')+'</div>';})()
       +'<div class="pos-pnl '+(isPos?'pos':'neg')+'">'
@@ -3520,10 +3693,28 @@ function saveBinKey(){
 function setScanMode(mode){
   scanMode=mode;
   const fast=document.getElementById('btn-fast-scan');
-  const full=document.getElementById('btn-full-scan');
-  if(fast){fast.style.background=mode==='fast'?'var(--green-bg)':'var(--bg)';fast.style.color=mode==='fast'?'var(--green)':'var(--text3)';fast.style.borderColor=mode==='fast'?'var(--green)':'var(--border2)';}
-  if(full){full.style.background=mode==='full'?'var(--blue-bg)':'var(--bg)';full.style.color=mode==='full'?'var(--blue)':'var(--text3)';full.style.borderColor=mode==='full'?'var(--blue)':'var(--border2)';}
-  if(mode==='full')toast('🔍 Mode complet','200+ actifs — ~3 min · Utilise 200 appels API/jour','info');
+  const sectoriel=document.getElementById('btn-sectoriel-scan');
+  // Reset tous les boutons
+  if(fast){fast.style.background='var(--bg)';fast.style.color='var(--text3)';fast.style.borderColor='var(--border2)';}
+  if(sectoriel){sectoriel.style.background='var(--bg)';sectoriel.style.color='var(--text3)';sectoriel.style.borderColor='var(--border2)';}
+  // Active le bon bouton
+  if(mode==='fast'&&fast){fast.style.background='var(--green-bg)';fast.style.color='var(--green)';fast.style.borderColor='var(--green)';}
+  if(mode==='sectoriel'&&sectoriel){sectoriel.style.background='var(--blue-bg)';sectoriel.style.color='var(--blue)';sectoriel.style.borderColor='var(--blue)';}
+  // Countdown
+  const cd=document.getElementById('countdown');
+  if(cd){
+    if(mode==='fast'){
+      if(!isScanning)cd.textContent='';
+    } else {
+      clearInterval(cdTimer);
+      cd.textContent='Manuel';
+    }
+  }
+  const info={
+    'fast':'⚡ Mode Rapide — 34 actifs leaders · scan auto 1h · ~9s',
+    'sectoriel':'🌐 Mode Sectoriel — 80 actifs · scan manuel · ~20s · couvre tous les secteurs'
+  };
+  toast(mode==='fast'?'⚡ Mode Rapide':'🌐 Mode Sectoriel',info[mode]||'','info');
 }
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
@@ -3542,13 +3733,18 @@ function renderHistory(){
   const wins=closed.filter(p=>p.pnl>0);
   const losses=closed.filter(p=>p.pnl<=0);
   const totalPnl=closed.reduce((a,p)=>a+(p.pnl||0),0);
-  const bestTrade=closed.reduce((a,p)=>(p.pnl||0)>(a.pnl||0)?p:a,closed[0]);
-  const worstTrade=closed.reduce((a,p)=>(p.pnl||0)<(a.pnl||0)?p:a,closed[0]);
+  const avgWin=wins.length?wins.reduce((a,p)=>a+(p.pnl||0),0)/wins.length:0;
+  const avgLoss=losses.length?losses.reduce((a,p)=>a+(p.pnl||0),0)/losses.length:0;
+  const bestPnl=closed.reduce((a,p)=>Math.max(a,p.pnl||0),0);
+  const worstPnl=closed.reduce((a,p)=>Math.min(a,p.pnl||0),0);
 
   statsEl.innerHTML=[
     {val:(totalPnl>=0?'+':'')+totalPnl.toFixed(2)+'€',lbl:'P&L total',col:totalPnl>=0?'var(--green)':'var(--red)'},
-    {val:Math.round(wins.length/closed.length*100)+'%',lbl:'Taux réussite',col:wins.length/closed.length>=0.5?'var(--green)':'var(--red)'},
+    {val:Math.round(wins.length/(closed.length||1)*100)+'%',lbl:'Taux réussite',col:wins.length/closed.length>=0.5?'var(--green)':'var(--red)'},
     {val:closed.length+'',lbl:'Total trades',col:'var(--blue)'},
+    {val:'+'+(bestPnl>0?bestPnl.toFixed(0):0)+'€',lbl:'Meilleur trade',col:'var(--green)'},
+    {val:(worstPnl<0?worstPnl.toFixed(0):0)+'€',lbl:'Pire trade',col:'var(--red)'},
+    {val:(avgWin>0?'+':'')+avgWin.toFixed(0)+'€',lbl:'Gain moyen',col:avgWin>=0?'var(--green)':'var(--red)'},
   ].map(s=>'<div class="cap-dash-item"><div class="cap-dash-val" style="color:'+s.col+'">'+s.val+'</div><div class="cap-dash-lbl">'+s.lbl+'</div></div>').join('');
 
   listEl.innerHTML=[...closed].reverse().map(pos=>{
@@ -3608,27 +3804,73 @@ function renderEmoList(){
   el.innerHTML=emotions.slice(0,10).map(e=>'<div class="ej-item"><span style="font-family:var(--mono);font-size:10px;color:var(--text3);width:40px;flex-shrink:0">'+e.date+'</span><span style="font-size:18px;flex-shrink:0">'+e.icon+'</span><span style="flex:1;font-size:11px;color:var(--text2)">'+e.label+' — '+e.advice+'</span></div>').join('');
 }
 
+// ── SCORE COMPOSITE POUR TOP OPPORTUNITÉS ────────────────────────────────────
+// Pondère : score technique (40%) + R/R (25%) + volume (20%) + RSI zone (10%) + favori (5%)
+function calcCompositeScore(s){
+  const openSyms=positions.filter(p=>p.status==='open').map(p=>p.sym);
+  if(openSyms.includes(s.sym))return -1;// déjà en position → exclu
+  if(s.action!=='buy')return 0;
+
+  let score=0;
+  // 1. Score technique /7 → 40 pts max
+  score+=(s.score/7)*40;
+  // 2. Ratio R/R → 25 pts max
+  if(s.rr>=4)score+=25;
+  else if(s.rr>=3)score+=20;
+  else if(s.rr>=2)score+=12;
+  else if(s.rr>=1.5)score+=6;
+  else if(s.rr<1.5)return 0;// R/R trop faible → exclu
+  // 3. Volume relatif → 20 pts max
+  if(s.volR>=3)score+=20;
+  else if(s.volR>=2)score+=15;
+  else if(s.volR>=1.5)score+=10;
+  else if(s.volR>=1.2)score+=5;
+  // 4. RSI zone idéale (45-60 = momentum propre, ni suracheté ni survendu) → 10 pts max
+  const rsi=s.rsiL||50;
+  if(rsi>=45&&rsi<=60)score+=10;
+  else if(rsi>=40&&rsi<=65)score+=6;
+  else if(rsi>=35&&rsi<=70)score+=3;
+  // 5. Favori → 5 pts bonus
+  if(isFavorite(s.sym))score+=5;
+  return Math.round(score*10)/10;
+}
+
 function updateHome(){
   const buys=signals.filter(s=>s.action==='buy');
   const sells=signals.filter(s=>s.action==='sell');
 
-  // Top 3 — toujours mis à jour, même si vide
-  if(buys.length){
-    document.getElementById('top3-list').innerHTML=buys.slice(0,3).map((s,i)=>
-      '<div class="top3-item" onclick="openDetail(\''+s.sym+'\')">'
-      +'<span style="font-family:var(--mono);font-size:10px;color:var(--text3);width:14px">#'+(i+1)+'</span>'
-      +'<span style="font-weight:700;font-size:12px;flex:1">'+s.short+' <span style="font-size:10px;color:var(--text3)">'+s.label+'</span></span>'
-      +'<span class="sc-action act-buy">🟢 LANCE-TOI</span>'
-      +'<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">'+fp(s.price,s.price)+'</span>'
-      +'</div>'
-    ).join('');
+  // ── TOP 5 avec score composite ──────────────────────────────────────────────
+  const openSyms=positions.filter(p=>p.status==='open').map(p=>p.sym);
+  const scored=buys
+    .filter(s=>!openSyms.includes(s.sym))// exclut positions déjà ouvertes
+    .map(s=>({...s,composite:calcCompositeScore(s)}))
+    .filter(s=>s.composite>0)// exclut R/R < 1.5
+    .sort((a,b)=>b.composite-a.composite)
+    .slice(0,5);
+
+  if(scored.length){
+    document.getElementById('top3-list').innerHTML=scored.map((s,i)=>{
+      const rrLabel=s.rr?'R/R '+s.rr.toFixed(1)+':1':'';
+      const volLabel=s.volR?'Vol ×'+s.volR.toFixed(1):'';
+      const badge=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+      return '<div class="top3-item" onclick="openDetail(\''+s.sym+'\')">'
+        +'<span style="font-size:12px;width:24px;flex-shrink:0">'+badge+'</span>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:12px">'+s.short+(isFavorite(s.sym)?' ⭐':'')+'</div>'
+        +'<div style="font-size:9px;color:var(--text3)">'+rrLabel+(rrLabel&&volLabel?' · ':'')+volLabel+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+        +'<div style="font-family:var(--mono);font-size:11px;font-weight:700">'+fp(s.price,s.price)+'</div>'
+        +'<div style="font-size:9px;font-weight:700;color:var(--green)">'+s.composite.toFixed(0)+'/100</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
   } else {
-    // Aucun signal buy → affiche message neutre
-    document.getElementById('top3-list').innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">'+(signals.length?'Aucun signal d\'achat détecté':'Lance le scanner pour voir les opportunités')+'</div>';
+    document.getElementById('top3-list').innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">'+(signals.length?'Aucune opportunité qualifiée (R/R > 1.5 requis)':'Lance le scanner pour voir les opportunités')+'</div>';
   }
   document.getElementById('dash-scan-time').textContent=signals.length?signals.length+' actifs · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 
-  // Macro mini
+  // ── Météo marché ─────────────────────────────────────────────────────────────
   const rs=Math.round(sells.length/(signals.length||1)*100);
   const mini=document.getElementById('macro-mini');
   const badge=document.getElementById('macro-mini-badge');
@@ -3709,35 +3951,84 @@ let lastPepites=[];
 
 async function runPepitesCore(targetEl,fullMode=false){
   const openSyms=positions.filter(p=>p.status==='open').map(p=>p.sym);
-  const scanTop=signals.filter(s=>s.action==='buy'&&!openSyms.includes(s.sym)).slice(0,5).map(s=>s.short+' ('+s.score+'/7)').join(', ')||'aucun scan récent';
+  const nb=fullMode?5:3;
 
-  const prompt='Tu es un analyste financier professionnel utilisant Wyckoff, ICT/SMC, et analyse technique avancée. '
-    +'Trouve '+(fullMode?'5':'3')+' pépites d\'investissement sous-évaluées avec fort potentiel de hausse. '
-    +'Critères UNIQUEMENT techniques: momentum RSI, tendance MA20/MA50, volume > moyenne, signal Bollinger. Sans catalyseur, sans événement inventé, sans date. '
-    +'Exclure les actifs déjà en position: '+( openSyms.join(',')||'aucun')+'. '
-    +'Signaux détectés: '+scanTop+'. '
-    +'Pour chaque pépite, JSON STRICT (tableau de '+(fullMode?5:3)+' objets):\n'
-    +'[{"sym":"TICKER","label":"Nom complet","why":"Analyse en 2 phrases (sans markdown)","entry":0.00,"tp":0.00,"sl":0.00,"score":8,"cat":"Secteur","broker":"t212 ou binance","catalyseur":"","tradeType":"Scalping|DayTrading|Swing|Position"}]\n'
-    +'Réponds UNIQUEMENT avec le JSON valide. Tickers Yahoo Finance réels.';
+  // ── ÉTAPE 1 : Sélection par score composite depuis le scan réel ───────────────
+  const topFromScan=signals
+    .filter(s=>s.action==='buy'&&!openSyms.includes(s.sym))
+    .map(s=>({...s,composite:calcCompositeScore(s)}))
+    .filter(s=>s.composite>0)
+    .sort((a,b)=>b.composite-a.composite)
+    .slice(0,nb);
 
-  try{
-    const res=await callAI(prompt,1000,false);
-    const d=await res.json();
-    let txt=d.content[0].text.trim().replace(/```json|```/g,'').trim();
-    const pepites=JSON.parse(txt);
-    // Filter already traded
-    const filtered=pepites.filter(p=>!openSyms.includes(p.sym));
-    lastPepites=filtered;
-    renderPepitesInEl(filtered,targetEl,fullMode);
-  }catch(e){
-    const fallback=[
-      {sym:'RMS.PA',label:'Hermès International',why:'Leader incontesté du luxe ultra-premium. Consolidation sur support MA50 avec RSI à 45 — zone d\'accumulation institutionnelle.',entry:2050,tp:2350,sl:1920,score:9,cat:'Luxe',broker:'t212',catalyseur:'Résultats T1 dans 3 semaines',tradeType:'Swing'},
-      {sym:'ASML',label:'ASML Holding',why:'Monopole mondial EUV. Bollinger squeeze sur daily — explosion imminente. Demande IA crée un backlog record.',entry:680,tp:820,sl:630,score:8,cat:'Tech/Semi',broker:'t212',catalyseur:'Révision hausse prévisions Q2',tradeType:'Swing'},
-      {sym:'SOL-USD',label:'Solana',why:'Volume x3 la moyenne sur 5 jours. Order block ICT sur support 130$. ETF en attente SEC.',entry:130,tp:180,sl:110,score:8,cat:'Crypto',broker:'binance',catalyseur:'ETF Solana — décision SEC imminente',tradeType:'DayTrading'},
-    ].filter(p=>!openSyms.includes(p.sym));
-    lastPepites=fallback;
-    renderPepitesInEl(fallback,targetEl,fullMode);
+  // Si le scan a suffisamment de signaux → on les utilise directement
+  if(topFromScan.length>=Math.min(2,nb)){
+    // ── ÉTAPE 2 : Claude explique pourquoi (pas d'invention) ─────────────────
+    const scanContext=topFromScan.map(s=>
+      s.short+': score '+s.score+'/7, RSI '+( s.rsiL||50).toFixed(0)+
+      ', vol ×'+(s.volR||1).toFixed(1)+', R/R '+(s.rr||0).toFixed(1)+':1'+
+      ', momentum '+(s.momL||0).toFixed(1)+'%'
+    ).join(' | ');
+
+    const prompt='Tu es un analyste technique. Voici les meilleurs signaux détectés par analyse technique réelle:\n'
+      +scanContext+'\n\n'
+      +'Pour chaque actif, génère un JSON strict (tableau de '+topFromScan.length+' objets):\n'
+      +'[{"sym":"TICKER","label":"Nom","why":"2 phrases d\'analyse technique pure (RSI, volume, Bollinger, tendance) SANS inventer de catalyseur ni de date","entry":PRIX_REEL,"tp":OBJECTIF_REEL,"sl":STOP_REEL,"score":SCORE_SUR_10,"cat":"Secteur","broker":"t212 ou binance","catalyseur":"","tradeType":"Scalping|DayTrading|Swing|Position"}]\n'
+      +'Utilise EXACTEMENT ces données pour entry/tp/sl:\n'
+      +topFromScan.map(s=>`${s.short}: entry=${s.entry?.toFixed(2)||s.price?.toFixed(2)}, tp=${s.tp1?.toFixed(2)||'?'}, sl=${s.sl?.toFixed(2)||'?'}`).join(', ')+'\n'
+      +'Réponds UNIQUEMENT avec le JSON valide.';
+
+    try{
+      const res=await callAI(prompt,1200,false);
+      const d=await res.json();
+      const txt=(d?.content?.[0]?.text||'').trim().replace(/```json|```/g,'').trim();
+      const jsonMatch=txt.match(/\[[\s\S]*\]/);
+      if(jsonMatch){
+        const pepites=JSON.parse(jsonMatch[0]);
+        const valid=pepites.filter(p=>p.sym&&p.entry>0&&p.tp>0&&p.sl>0);
+        if(valid.length){
+          // Enrichit avec les données réelles du scan
+          const enriched=valid.map(p=>{
+            const sig=signals.find(s=>s.sym===p.sym);
+            return{
+              ...p,
+              entry:sig?sig.price:p.entry,
+              tp:sig?sig.tp1:p.tp,
+              sl:sig?sig.sl:p.sl,
+              score:sig?Math.round(calcCompositeScore(sig)/10):p.score,
+              fromScan:true,// marqueur : données réelles
+            };
+          }).filter(p=>!openSyms.includes(p.sym));
+          lastPepites=enriched;
+          renderPepitesInEl(enriched,targetEl,fullMode);
+          return;
+        }
+      }
+    }catch(e){}
+
+    // Fallback sans IA : affiche directement les signaux du scan avec explication générique
+    const fallbackPepites=topFromScan.map(s=>({
+      sym:s.sym,label:s.label,
+      why:s.score+'/7 conditions bullish · RSI '+( s.rsiL||50).toFixed(0)+
+        ' · Volume ×'+(s.volR||1).toFixed(1)+' la moyenne · Momentum '+(s.momL||0).toFixed(1)+'%',
+      entry:s.price,tp:s.tp1,sl:s.sl,
+      score:Math.round(calcCompositeScore(s)/10),
+      cat:s.cat,broker:s.broker,catalyseur:'',tradeType:'Swing',fromScan:true,
+    }));
+    lastPepites=fallbackPepites;
+    renderPepitesInEl(fallbackPepites,targetEl,fullMode);
+    return;
   }
+
+  // ── Pas assez de signaux scan → fallback statique ────────────────────────────
+  const fallback=[
+    {sym:'RMS.PA',label:'Hermès International',why:'Lance un scan pour obtenir une analyse technique réelle sur cet actif.',entry:2050,tp:2350,sl:1920,score:8,cat:'Luxe',broker:'t212',catalyseur:'',tradeType:'Swing'},
+    {sym:'ASML',label:'ASML Holding',why:'Lance un scan pour obtenir une analyse technique réelle sur cet actif.',entry:680,tp:820,sl:630,score:7,cat:'Tech/IA',broker:'t212',catalyseur:'',tradeType:'Swing'},
+    {sym:'BTC-USD',label:'Bitcoin',why:'Lance un scan pour obtenir une analyse technique réelle sur cet actif.',entry:65000,tp:75000,sl:60000,score:7,cat:'Crypto',broker:'binance',catalyseur:'',tradeType:'DayTrading'},
+  ].filter(p=>!openSyms.includes(p.sym));
+  lastPepites=fallback;
+  renderPepitesInEl(fallback,targetEl,fullMode);
+  if(!signals.length)toast('💎 Pépites','Lance le scanner pour des pépites basées sur les vrais signaux','info');
 }
 
 async function runPepites(){
@@ -3862,7 +4153,7 @@ function tradePepite(sym,label,entry,tp,sl,broker){
     id:Date.now(),sym,short:sym.replace('.PA','').replace('-USD','').replace('.L',''),
     label,cat:'Pépite',broker,
     action:'buy',entry,tp1:tp,tp2:tp*1.1,sl,
-    amount:amt,shares:amt/entry,emotion:currentEmo,
+    amount:amt,shares:entry>0?amt/entry:0,emotion:currentEmo,
     status:'open',openDate:new Date().toLocaleDateString('fr-FR'),currentPrice:entry
   });
   savePos();syncSave(positions[positions.length-1]);updatePortfolioUI();updateDashboardPositions();
@@ -3925,21 +4216,39 @@ async function callAI(prompt,maxTokens,stream){
     'anthropic-dangerous-direct-browser-access':'true',
     'x-api-key':key
   };
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers,
-    body:JSON.stringify({
-      model:'claude-sonnet-4-6',
-      max_tokens:maxTokens,
-      stream:stream||false,
-      messages:[{role:'user',content:prompt}]
-    })
-  });
+  let res;
+  try{
+    res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers,
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:maxTokens,
+        stream:stream||false,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+  }catch(e){
+    // Erreur réseau (pas de connexion, timeout DNS, etc.)
+    toast('⚠️ Impossible de contacter Claude','Vérifie ta connexion internet','warn');
+    throw new Error('Erreur réseau Claude: '+e.message);
+  }
   if(!res.ok){
     const err=await res.json().catch(()=>({}));
     const msg=err.error?.message||'';
-    if(res.status===401)throw new Error('Clé API invalide — re-saisis ta clé dans Réglages');
+    if(res.status===401){
+      toast('❌ Clé Claude invalide','Re-saisis ta clé dans Réglages → Clé API Claude','warn');
+      throw new Error('Clé API invalide — re-saisis ta clé dans Réglages');
+    }
     if(res.status===404)throw new Error('Modèle indisponible');
+    if(res.status===429||res.status===529){
+      toast('⚠️ Claude surchargé','Trop de requêtes — réessaie dans quelques secondes','warn');
+      throw new Error('Rate limit Claude ('+res.status+')');
+    }
+    if(res.status>=500){
+      toast('⚠️ Claude indisponible','Serveur Anthropic en erreur ('+res.status+') — réessaie plus tard','warn');
+      throw new Error('HTTP '+res.status+(msg?' — '+msg:''));
+    }
     throw new Error('HTTP '+res.status+(msg?' — '+msg:''));
   }
   return res;
@@ -3947,13 +4256,15 @@ async function callAI(prompt,maxTokens,stream){
 
 // ── MARKDOWN TO HTML ──────────────────────────────────────────────────────────
 function md(text){
+  if(!text)return '';
   return text
     .replace(/^### (.*)/gm,'<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:10px;margin-bottom:4px">$1</div>')
     .replace(/^## (.*)/gm,'<div style="font-size:12px;font-weight:700;color:var(--text);margin-top:10px;margin-bottom:4px">$1</div>')
     .replace(/^# (.*)/gm,'<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px">$1</div>')
     .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
     .replace(/\*(.*?)\*/g,'<em>$1</em>')
-    .replace(/^- (.*)/gm,'<div style="display:flex;gap:6px;margin-bottom:3px"><span style="color:var(--green);flex-shrink:0">▸</span><span>$1</span></div>')
+    // Liste : seulement "- " suivi d'une lettre (évite les nombres négatifs comme -123€)
+    .replace(/^- ([A-Za-zÀ-ÿ\d"'«»(].*)/gm,'<div style="display:flex;gap:6px;margin-bottom:3px"><span style="color:var(--green);flex-shrink:0">▸</span><span>$1</span></div>')
     .replace(/\n\n/g,'<br>')
     .replace(/\n/g,' ');
 }
@@ -4057,7 +4368,8 @@ async function runCoachPostTrade(pos,pnl,s){
   try{
     const res=await callAI('Coach trading court. Feedback: '+pos.short+' '+(pos.action==='buy'?'Achat':'Vente')+' P&L: '+(pnl>=0?'+':'')+pnl.toFixed(2)+'€. Signal initial: '+s.verdict+'. Émotion: '+(pos.emotion||'neutre')+'. 2 phrases max. Encourageant mais honnête.',150,false);
     const d=await res.json();
-    toast('🤖 Coach — '+pos.short,d.content[0].text.substring(0,120),pnl>=0?'buy':'sell');
+    const txt=d?.content?.[0]?.text;
+    if(txt)toast('🤖 Coach — '+pos.short,txt.substring(0,120),pnl>=0?'buy':'sell');
   }catch(e){
     toast('🤖 Coach — '+pos.short,pnl>0?'Trade gagnant ! Continue à suivre le plan.':'Trade perdant. Respecte toujours ton stop loss.',pnl>=0?'buy':'sell');
   }
