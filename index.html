@@ -1825,21 +1825,16 @@ async function getPrice(sym){
 
   // ACTIONS/ETF/FOREX : Twelve Data via webhook, Yahoo si toutes clés épuisées
   if(!tdAllExhausted){
-    // Essaie chaque clé disponible
-    const startIndex=tdKeyIndex;
-    do{
-      try{
-        const tdSym=toTDSymbol(sym);
-        const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY();
-        const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(10000)});
-        if(res.ok){
-          const d=await res.json();
-          if(d.code===429){rotateTDKey();continue;}
-          if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
-        }
-      }catch(e){}
-      break;
-    }while(!tdAllExhausted&&tdKeyIndex!==startIndex);
+    const tdSym=toTDSymbol(sym);
+    const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY();
+    try{
+      const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(10000)});
+      if(res.ok){
+        const d=await res.json();
+        if(d.code===429){rotateTDKey();}// rotation pour le prochain appel
+        else if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
+      }
+    }catch(e){}
   }
 
   // FALLBACK YAHOO — utilisé quand toutes les clés TD sont épuisées
@@ -1863,31 +1858,26 @@ async function getTDPrice(sym){return getPrice(sym);}
 
 // ── SÉRIE HISTORIQUE POUR LE SCAN ─────────────────────────────────────────────
 async function getTDTimeSeries(sym,outputsize=90){
-  // Essaie chaque clé TD disponible
   if(!tdAllExhausted){
-    const startIndex=tdKeyIndex;
-    do{
-      const tdSym=toTDSymbol(sym);
-      const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY()});
-      const tdUrl=TD_BASE+'/time_series?'+params.toString();
-      try{
-        const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
-        if(res.ok){
-          const d=await res.json();
-          if(d.code===429){rotateTDKey();continue;}
-          if(d.values&&d.values.length){
-            const values=d.values.reverse();
-            return{
-              closes:values.map(v=>parseFloat(v.close)),
-              highs:values.map(v=>parseFloat(v.high)),
-              lows:values.map(v=>parseFloat(v.low)),
-              vols:values.map(v=>parseFloat(v.volume||0)),
-            };
-          }
+    const tdSym=toTDSymbol(sym);
+    const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY()});
+    const tdUrl=TD_BASE+'/time_series?'+params.toString();
+    try{
+      const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
+      if(res.ok){
+        const d=await res.json();
+        if(d.code===429){rotateTDKey();}// rotation pour le prochain appel
+        else if(d.values&&d.values.length){
+          const values=d.values.reverse();
+          return{
+            closes:values.map(v=>parseFloat(v.close)),
+            highs:values.map(v=>parseFloat(v.high)),
+            lows:values.map(v=>parseFloat(v.low)),
+            vols:values.map(v=>parseFloat(v.volume||0)),
+          };
         }
-      }catch(e){}
-      break;
-    }while(!tdAllExhausted&&tdKeyIndex!==startIndex);
+      }
+    }catch(e){}
   }
   throw new Error('Impossible de récupérer les données pour '+sym);
 }
@@ -2025,7 +2015,7 @@ async function startScan(){
   document.getElementById('scan-info').textContent=strong+' opportunités · '+ok+' analysés';
   if(ok===0){document.getElementById('sg').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text"><strong>Aucune donnée</strong><br>Désactive ton bloqueur de pub<br>et essaie en navigation privée</div></div>';}
   btn.disabled=false;btn.textContent='↻ Rescanner';isScanning=false;
-  startCd(300);clearInterval(scanTimer);scanTimer=setInterval(()=>startScan(),300000);
+  startCd(1800);clearInterval(scanTimer);scanTimer=setInterval(()=>startScan(),1800000);
 }
 
 function startCd(sec){clearInterval(cdTimer);let s=sec;const el=document.getElementById('countdown');cdTimer=setInterval(()=>{s--;const m=Math.floor(s/60);el.textContent=m+':'+(s%60).toString().padStart(2,'0');if(s<=0)clearInterval(cdTimer);},1000);}
@@ -2473,7 +2463,6 @@ async function loadSettingsFromSheets(){
 }
 
 // ── REAL-TIME PRICE REFRESH ──────────────────────────────────────────────────
-let rtTimer=null;
 let priceHistory={};// sym -> [prices]
 
 async function refreshOpenPositions(){
@@ -2652,16 +2641,17 @@ function catBadge(cat){
   return '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;background:'+cfg.bg+';color:'+cfg.color+';font-size:9px;font-weight:700">'+cfg.icon+' '+cat+'</span>';
 }
 
+let rtTimer=null,scalpTimer=null;
+
 function startRealTime(){
   clearInterval(rtTimer);
+  clearInterval(scalpTimer);
   if(positions.filter(p=>p.status==='open').length>0)refreshOpenPositions();
   rtTimer=setInterval(()=>{
     refreshOpenPositions();
     checkFavSignalNotifs();
-  },30000);
-  // Scalping check every 60s on favorites
-  setInterval(checkScalpingNotifs,60000);
-  // Schedule 8h briefing
+  },120000);// 2 minutes
+  scalpTimer=setInterval(checkScalpingNotifs,60000);
   scheduleMorningBriefing();
 }
 
