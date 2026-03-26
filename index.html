@@ -2325,7 +2325,7 @@ function showBinanceBalance(balances){
   const top=balances.slice(0,5).map(b=>`${b.asset}: ${(b.free+b.locked).toFixed(4)}`).join(' · ');
   toast('💰 Solde Binance',top||'Compte connecté','info');
 }
-const WEBHOOK_DEFAULT='https://script.google.com/macros/s/AKfycbxl6fjrUP3rT1Sw-fkWUjNqeR8G0oV5dUC_1JtpM-UkSN_W7Mht5KOQGXa5UVHXc5-M/exec';
+const WEBHOOK_DEFAULT='';
 let WEBHOOK=localStorage.getItem('ts_webhook')||WEBHOOK_DEFAULT;
 
 function saveWebhook(){
