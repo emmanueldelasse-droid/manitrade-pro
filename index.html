@@ -66,6 +66,69 @@
 [data-theme="dark"] .actu-link{background:rgba(13,17,23,.6);border-color:rgba(0,212,255,.2);color:var(--blue);}
 [data-theme="dark"] .actu-link:hover{border-color:var(--green);color:var(--green);box-shadow:var(--glow-green);}
 
+/* ── THÈME BLEU ───────────────────────────────────────────────────────────── */
+[data-theme="blue"]{
+  --bg:#e8f0fe;--white:#f0f6ff;--border:#c7d9f8;--border2:#a8c3f5;
+  --green:#0a8a5c;--green-bg:#e6f4ef;--green-light:#a7d4c0;
+  --red:#d63251;--red-bg:#fce8ed;--red-light:#f4aaba;
+  --orange:#d97706;--orange-bg:#fef3e2;
+  --blue:#2563eb;--blue-bg:#dbeafe;--blue-light:#93c5fd;
+  --text:#0f172a;--text2:#1e3a6e;--text3:#6b88b5;
+  --shadow:0 1px 4px rgba(37,99,235,.10),0 2px 8px rgba(37,99,235,.07);
+  --shadow2:0 8px 32px rgba(37,99,235,.18);
+  --glow-green:none;--glow-red:none;--glow-blue:none;
+  --card-bg:#f0f6ff;--card-border:1px solid #c7d9f8;
+  --topbar-bg:#dbeafe;--tabs-bg:#dbeafe;
+}
+[data-theme="blue"] body{background:var(--bg);}
+[data-theme="blue"] .card,[data-theme="blue"] .dashboard-section,[data-theme="blue"] .sig-card,[data-theme="blue"] .pos-card,[data-theme="blue"] .fav-card{background:var(--card-bg);border:var(--card-border);}
+[data-theme="blue"] #topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border);}
+[data-theme="blue"] #tabs{background:var(--tabs-bg);border-bottom:1px solid var(--border);}
+[data-theme="blue"] .tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+[data-theme="blue"] .btn-scan{background:var(--blue);color:white;}
+
+/* ── THÈME VERT ───────────────────────────────────────────────────────────── */
+[data-theme="green"]{
+  --bg:#e8f5f0;--white:#f0faf6;--border:#b8ddd0;--border2:#8ecfba;
+  --green:#00875a;--green-bg:#d6f0e6;--green-light:#86c9ad;
+  --red:#d63251;--red-bg:#fce8ed;--red-light:#f4aaba;
+  --orange:#c47d00;--orange-bg:#fef3d6;
+  --blue:#1a6fa8;--blue-bg:#daeef8;--blue-light:#90cbe8;
+  --text:#0d2b1f;--text2:#1a5240;--text3:#5c9a7e;
+  --shadow:0 1px 4px rgba(0,135,90,.10),0 2px 8px rgba(0,135,90,.07);
+  --shadow2:0 8px 32px rgba(0,135,90,.18);
+  --glow-green:none;--glow-red:none;--glow-blue:none;
+  --card-bg:#f0faf6;--card-border:1px solid #b8ddd0;
+  --topbar-bg:#d6f0e6;--tabs-bg:#d6f0e6;
+}
+[data-theme="green"] body{background:var(--bg);}
+[data-theme="green"] .card,[data-theme="green"] .dashboard-section,[data-theme="green"] .sig-card,[data-theme="green"] .pos-card,[data-theme="green"] .fav-card{background:var(--card-bg);border:var(--card-border);}
+[data-theme="green"] #topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border);}
+[data-theme="green"] #tabs{background:var(--tabs-bg);border-bottom:1px solid var(--border);}
+[data-theme="green"] .tab.active{color:var(--green);border-bottom-color:var(--green);}
+[data-theme="green"] .btn-scan{background:var(--green);color:white;}
+
+/* ── THÈME BEIGE ──────────────────────────────────────────────────────────── */
+[data-theme="beige"]{
+  --bg:#f5f0e8;--white:#fdfaf5;--border:#e0d5c0;--border2:#cfc0a0;
+  --green:#5a7a3a;--green-bg:#eaf2e0;--green-light:#b8d4a0;
+  --red:#a83228;--red-bg:#f8e8e6;--red-light:#e8b0aa;
+  --orange:#a86820;--orange-bg:#f8eedc;
+  --blue:#2a5080;--blue-bg:#dce8f4;--blue-light:#a0bcd8;
+  --text:#2a2018;--text2:#5a4a30;--text3:#9a8a70;
+  --shadow:0 1px 4px rgba(90,74,48,.10),0 2px 8px rgba(90,74,48,.07);
+  --shadow2:0 8px 32px rgba(90,74,48,.15);
+  --glow-green:none;--glow-red:none;--glow-blue:none;
+  --card-bg:#fdfaf5;--card-border:1px solid #e0d5c0;
+  --topbar-bg:#efe8d8;--tabs-bg:#efe8d8;
+}
+[data-theme="beige"] body{background:var(--bg);}
+[data-theme="beige"] .card,[data-theme="beige"] .dashboard-section,[data-theme="beige"] .sig-card,[data-theme="beige"] .pos-card,[data-theme="beige"] .fav-card{background:var(--card-bg);border:var(--card-border);}
+[data-theme="beige"] #topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border);}
+[data-theme="beige"] #tabs{background:var(--tabs-bg);border-bottom:1px solid var(--border);}
+[data-theme="beige"] .tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+[data-theme="beige"] .btn-scan{background:var(--blue);color:white;}
+
 /* ── THEME SWITCHER ───────────────────────────────────────────────────────── */
 .theme-switch{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border2);border-radius:20px;padding:3px;cursor:pointer}
 .theme-switch-btn{font-size:14px;width:28px;height:28px;border-radius:16px;border:none;background:transparent;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
@@ -390,6 +453,7 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
     <button class="btn-scan" id="scan-btn" onclick="startScan()">▶ Scanner</button>
   </div>
 </div>
+<!-- theme-picker-wrap hors du topbar pour éviter les problèmes de stacking context mobile -->
 <div id="theme-picker-wrap">
   <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Thème visuel</div>
   <div class="theme-picker">
@@ -478,7 +542,7 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
   <span id="risk-val" style="display:none"></span>
   <span id="risk-lbl" style="display:none"></span>
   <span id="scan-stats" style="display:none"></span>
-  <div id="actu-events" style="display:none"></div>
+  <div id="actu-events-home" style="display:none"></div>
   <div id="briefing-body" style="display:none"></div>
 </div>
 
@@ -651,9 +715,8 @@ canvas.candle-chart{width:100%;display:block;border-radius:var(--rs)}
     </div>
   </div>
 
-  <!-- IDs cachés pour compatibilité -->
+  <!-- IDs pour compatibilité -->
   <div id="actu-events-full" style="display:none"></div>
-  <div id="actu-events" style="display:none"></div>
 </div>
 
 <!-- PORTFOLIO -->
@@ -1074,7 +1137,7 @@ const ASSETS_FULL=[
   {sym:'ZW=F',label:'Blé',short:'BLE',cat:'Commodités',broker:'t212'},
 ];
 
-const ASSETS=ASSETS_FAST; // Default = fast mode
+// scanMode contrôle quel ensemble d'actifs utiliser via getAllAssets()
 let scanMode='fast'; // 'fast' or 'full'
 
 const BEST_HOURS={'Crypto':'24h/24 — pics à 14h-16h et 20h-22h','Tech/IA':'15h30-17h30 (NYSE)','Énergie':'9h-11h (London) et 15h30-17h','Santé':'15h30-17h (NYSE)','Finance':'15h30-17h (NYSE)','Défense':'15h30-17h (NYSE)','Industrie':'15h30-17h (NYSE)','Conso':'15h30-17h (NYSE)','Forex':'8h-12h (London) et 15h30-17h','Commodités':'14h30-16h (COMEX)','ETF':'15h30-17h (NYSE)','Luxe':'15h30-17h (Paris/NYSE)','Personnel':'15h30-17h'};
@@ -1201,7 +1264,8 @@ function removeCustomAsset(sym){
 function renderCustomAssets(){
   const el=document.getElementById('custom-assets-list');
   if(!el)return;
-  const all=[...customAssets,...ASSETS.filter(a=>isFavorite(a.sym))];
+  const baseAssets=getAllAssets();
+  const all=[...customAssets,...baseAssets.filter(a=>!customAssets.find(c=>c.sym===a.sym)&&isFavorite(a.sym))];
   if(!all.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">Aucun favori pour l\'instant</div>';return;}
   el.innerHTML=all.map(a=>`
     <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px">
@@ -1331,9 +1395,14 @@ function matchSearch(query,asset){
 
 // ── FAVORITES VIEW ────────────────────────────────────────────────────────────
 async function renderFavoritesView(){
-  const allAssets=[...ASSETS_FAST,...ASSETS_FULL,...customAssets];
+  // getAllAssets() gère déjà le mode fast/full + customAssets sans doublon
   const seen=new Set();
-  const favAssets=allAssets.filter(a=>{if(seen.has(a.sym))return false;seen.add(a.sym);return isFavorite(a.sym);});
+  const allAssets=[...getAllAssets(),...customAssets].filter(a=>{
+    if(seen.has(a.sym))return false;
+    seen.add(a.sym);
+    return true;
+  });
+  const favAssets=allAssets.filter(a=>isFavorite(a.sym));
   const el=document.getElementById('fav-list');
   const empty=document.getElementById('fav-empty');
   if(!el)return;
@@ -1645,7 +1714,14 @@ function showCategory(name,items){
 function renderSearchFavorites(){
   const el=document.getElementById('search-fav-list');
   if(!el)return;
-  const favAssets=[...ASSETS,...customAssets].filter(a=>isFavorite(a.sym));
+  // Utilise getAllAssets() pour respecter le mode scan actif + customAssets dédupliqués
+  const seen=new Set();
+  const allAssets=[...getAllAssets(),...customAssets].filter(a=>{
+    if(seen.has(a.sym))return false;
+    seen.add(a.sym);
+    return true;
+  });
+  const favAssets=allAssets.filter(a=>isFavorite(a.sym));
   if(!favAssets.length){
     el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0">Aucun favori — cherche un actif et clique ☆</div>';
     return;
@@ -1706,24 +1782,27 @@ function syncActuTab(){
   const src=document.getElementById('briefing-body');
   const dst=document.getElementById('briefing-body-actu');
   if(src&&dst&&src.innerHTML&&!src.innerHTML.includes('cursor'))dst.innerHTML=src.innerHTML;
-  // Sync events
-  const srcEv=document.getElementById('actu-events');
+  // Sync events — source est actu-events-home (home view hidden), dest est actu-events-full (actu view)
+  const srcEv=document.getElementById('actu-events-home');
   const dstEv=document.getElementById('actu-events-full');
   if(srcEv&&dstEv&&srcEv.innerHTML)dstEv.innerHTML=srcEv.innerHTML;
 }
 
 function setTheme(t){
-  document.documentElement.setAttribute('data-theme',t==='light'?'':t);
-  localStorage.setItem('ts_theme',t);
-  // Topbar toggle buttons
-  document.getElementById('btn-theme-light').className='theme-switch-btn'+(t==='light'?' active':'');
-  document.getElementById('btn-theme-dark').className='theme-switch-btn'+(t==='dark'?' active':'');
-  // Settings theme picker buttons — mark the active one
+  // 'night' est un alias de 'dark' dans le picker settings
+  const resolved=t==='night'?'dark':t;
+  document.documentElement.setAttribute('data-theme',resolved==='light'?'':resolved);
+  localStorage.setItem('ts_theme',resolved);
+  // Topbar toggle buttons (☀️/🌙)
+  document.getElementById('btn-theme-light').className='theme-switch-btn'+(resolved==='light'?' active':'');
+  document.getElementById('btn-theme-dark').className='theme-switch-btn'+(resolved==='dark'?' active':'');
+  // Settings theme picker buttons — marque l'actif
   document.querySelectorAll('.theme-btn').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.t===t);
+    btn.classList.toggle('active', btn.dataset.t===t||btn.dataset.t===resolved);
   });
-  // Update theme color meta
-  document.querySelector('meta[name="theme-color"]').setAttribute('content',t==='dark'?'#080b14':'#ffffff');
+  // Meta theme-color selon le thème
+  const metaColors={light:'#ffffff',dark:'#080b14',blue:'#e8f0fe',green:'#e8f5f0',beige:'#f5f0e8'};
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',metaColors[resolved]||'#ffffff');
 }
 
 function applyTheme(t){setTheme(t);}
@@ -1741,22 +1820,36 @@ function bollinger(c,n=20,k=2){return c.map((_,i)=>{if(i<n-1)return{mid:null,up:
 function fibonacci(h,l,n=20){const hi=Math.max(...h.slice(-n)),lo=Math.min(...l.slice(-n)),r=hi-lo;return{hi,lo,f236:hi-r*.236,f382:hi-r*.382,f500:hi-r*.5,f618:hi-r*.618};}
 function momentum(c,n=10){return c.map((v,i)=>i<n?null:(v-c[i-n])/c[i-n]*100);}
 function calcCap(cap,atr,price){
-  const c=cap||capital;// always use latest capital
-  const ra=c*.02,sld=atr*1.5,sh=ra/sld;
-  return{amount:(sh*price).toFixed(2),risk:ra.toFixed(0),gain:((sh*price)*(Math.abs((price+atr*2-price)/price))).toFixed(2)};
+  const c=cap||capital||10000;
+  const safeATR=atr&&atr>0?atr:price*0.02||1;
+  const safePrice=price&&price>0?price:1;
+  const ra=c*.02,sld=safeATR*1.5,sh=ra/sld;
+  const amount=sh*safePrice;
+  const gain=amount*(safeATR*2)/safePrice;
+  return{amount:amount.toFixed(2),risk:ra.toFixed(0),gain:gain.toFixed(2)};
 }
-function fp(v,ref){return ref>100?v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):v.toFixed(4);}
-function fgScore(closes,rsiL,volR){return Math.min(100,Math.max(0,Math.round((rsiL/100)*40+(volR>1?30:volR*30)+(closes[closes.length-1]>closes[closes.length-5]?30:0))));}
-
-// ── PRIX UNIFIÉS — Apps Script + Binance + CoinGecko ────────────────────────
+function fp(v,ref){
+  if(v===null||v===undefined||isNaN(v))return '—';
+  return ref>100?v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):v.toFixed(4);
+}
+function fgScore(closes,rsiL,volR){
+  const n=closes.length;
+  const trend=n>=5?(closes[n-1]>closes[n-5]?30:0):0;
+  return Math.min(100,Math.max(0,Math.round((rsiL/100)*40+(volR>1?30:volR*30)+trend)));
+}
+// ── PRIX UNIFIÉS — Architecture optimisée quota API ──────────────────────────
+// Crypto   → Binance direct → CoinGecko direct (0 appel TD)
+// Actions US/ETF → Yahoo direct → TD si CORS échoue
+// Actions EU (.PA .L .DE .SW .MI) → TD direct → Yahoo via WEBHOOK
+// Forex/Commodités → TD direct → Yahoo via WEBHOOK
 const TD_KEYS=[
-  localStorage.getItem('ts_td_key1')||'de8a2804261f44959608e6d226312385',
+  localStorage.getItem('ts_td_key1')||'',
   localStorage.getItem('ts_td_key2')||'',
   localStorage.getItem('ts_td_key3')||''
 ].filter(k=>k.length>0);
 let tdKeyIndex=0;
 let tdAllExhausted=false;
-function TD_KEY(){return TD_KEYS[tdKeyIndex]||TD_KEYS[0];}
+function TD_KEY(){return TD_KEYS[tdKeyIndex]||TD_KEYS[0]||'';}
 function rotateTDKey(){
   tdKeyIndex++;
   if(tdKeyIndex>=TD_KEYS.length){
@@ -1768,6 +1861,107 @@ function rotateTDKey(){
 }
 function resetTDKeys(){tdKeyIndex=0;tdAllExhausted=false;}
 const TD_BASE='https://api.twelvedata.com';
+
+// Détecte si un symbole est un actif européen (nécessite TD, CORS Yahoo peu fiable)
+function isEUAsset(sym){
+  return sym.endsWith('.PA')||sym.endsWith('.L')||sym.endsWith('.DE')||sym.endsWith('.SW')||sym.endsWith('.MI');
+}
+// Détecte si un symbole est US (Yahoo direct OK)
+function isUSAsset(sym){
+  return !sym.includes('-USD')&&!sym.includes('=X')&&!sym.includes('=F')&&!isEUAsset(sym);
+}
+
+// Yahoo Finance direct (sans proxy) — fonctionne bien pour actifs US sur desktop/navigateur moderne
+async function getYahooPriceDirect(sym,timeout=6000){
+  try{
+    const url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1d&interval=1m';
+    const res=await fetch(url,{signal:AbortSignal.timeout(timeout)});
+    if(res.ok){
+      const d=await res.json();
+      const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(price&&price>0)return price;
+    }
+  }catch(e){}
+  return null;
+}
+
+// TD via proxy (WEBHOOK) — pour actifs EU et fallback général
+async function getTDPriceDirect(sym,timeout=10000){
+  if(!WEBHOOK||TD_KEYS.length===0)return null;
+  if(tdAllExhausted)return null;
+  const tdSym=toTDSymbol(sym);
+  const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY();
+  try{
+    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(timeout)});
+    if(res.ok){
+      const d=await res.json();
+      if(d.code===429){rotateTDKey();return null;}
+      if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
+    }
+  }catch(e){}
+  return null;
+}
+
+// Yahoo via proxy WEBHOOK — fallback EU quand TD échoue
+async function getYahooPriceViaProxy(sym,timeout=10000){
+  if(!WEBHOOK)return null;
+  try{
+    const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1d&interval=1m';
+    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(timeout)});
+    if(res.ok){
+      const d=await res.json();
+      const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if(price&&price>0)return price;
+    }
+  }catch(e){}
+  return null;
+}
+
+// ── FONCTION PRINCIPALE : getPrice(sym) ───────────────────────────────────────
+async function getPrice(sym){
+  const isCrypto=sym.includes('-USD');
+
+  // CRYPTO : Binance direct → CoinGecko direct (0 appel TD)
+  if(isCrypto){
+    try{
+      const binSym=sym.replace('-USD','USDT').replace(/[^A-Z]/g,'');
+      const res=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+binSym,{signal:AbortSignal.timeout(5000)});
+      if(res.ok){const d=await res.json();if(d.price&&parseFloat(d.price)>0)return parseFloat(d.price);}
+    }catch(e){}
+    try{
+      const cgId=CG_MAP[sym];
+      if(cgId){
+        const res=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+cgId+'&vs_currencies=usd',{signal:AbortSignal.timeout(6000)});
+        if(res.ok){const d=await res.json();if(d[cgId]?.usd)return d[cgId].usd;}
+      }
+    }catch(e){}
+    return null;
+  }
+
+  // ACTIONS EU (.PA .L .DE .SW .MI) : TD direct → Yahoo via proxy
+  if(isEUAsset(sym)){
+    const tdPrice=await getTDPriceDirect(sym);
+    if(tdPrice)return tdPrice;
+    // Fallback Yahoo via proxy pour EU
+    return await getYahooPriceViaProxy(sym);
+  }
+
+  // FOREX & COMMODITÉS (=X, =F) : TD → Yahoo proxy
+  if(sym.includes('=X')||sym.includes('=F')){
+    const tdPrice=await getTDPriceDirect(sym);
+    if(tdPrice)return tdPrice;
+    return await getYahooPriceViaProxy(sym);
+  }
+
+  // ACTIONS US & ETF : Yahoo direct d'abord (économise quota TD) → TD si CORS → Yahoo proxy
+  const yhDirect=await getYahooPriceDirect(sym);
+  if(yhDirect)return yhDirect;
+  // CORS a échoué → essai TD
+  const tdPrice=await getTDPriceDirect(sym);
+  if(tdPrice)return tdPrice;
+  // Dernier recours : Yahoo via proxy
+  return await getYahooPriceViaProxy(sym);
+}
 
 // Crypto symbols map for CoinGecko
 const CG_MAP={
@@ -1799,66 +1993,38 @@ function toTDSymbol(sym){
   return map[sym]||sym;
 }
 
-// ── FONCTION PRINCIPALE : getPrice(sym) ───────────────────────────────────────
-// Utilisée partout dans l'app — source unique de vérité
-async function getPrice(sym){
-  const isCrypto=sym.includes('-USD');
-
-  // CRYPTO : Binance (direct, pas de CORS) puis CoinGecko
-  if(isCrypto){
-    // 1. Binance direct
-    try{
-      const binSym=sym.replace('-USD','USDT').replace(/[^A-Z]/g,'');
-      const res=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+binSym,{signal:AbortSignal.timeout(5000)});
-      if(res.ok){const d=await res.json();if(d.price&&parseFloat(d.price)>0)return parseFloat(d.price);}
-    }catch(e){}
-    // 2. CoinGecko direct (pas de CORS)
-    try{
-      const cgId=CG_MAP[sym];
-      if(cgId){
-        const res=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+cgId+'&vs_currencies=usd',{signal:AbortSignal.timeout(6000)});
-        if(res.ok){const d=await res.json();if(d[cgId]?.usd)return d[cgId].usd;}
-      }
-    }catch(e){}
-    return null;
-  }
-
-  // ACTIONS/ETF/FOREX : Twelve Data via webhook, Yahoo si toutes clés épuisées
-  if(!tdAllExhausted){
-    const tdSym=toTDSymbol(sym);
-    const tdUrl=TD_BASE+'/price?symbol='+encodeURIComponent(tdSym)+'&apikey='+TD_KEY();
-    try{
-      const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(10000)});
-      if(res.ok){
-        const d=await res.json();
-        if(d.code===429){rotateTDKey();}// rotation pour le prochain appel
-        else if(d.price&&!d.code&&parseFloat(d.price)>0)return parseFloat(d.price);
-      }
-    }catch(e){}
-  }
-
-  // FALLBACK YAHOO — utilisé quand toutes les clés TD sont épuisées
-  try{
-    const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=1d&interval=1m';
-    const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(10000)});
-    if(res.ok){
-      const d=await res.json();
-      const price=d?.chart?.result?.[0]?.meta?.regularMarketPrice;
-      if(price&&price>0){
-        if(tdAllExhausted)console.info('Yahoo fallback OK pour '+sym);
-        return price;
-      }
-    }
-  }catch(e){}
-  return null;
-}
-
 // getTDPrice = alias de getPrice pour compatibilité
 async function getTDPrice(sym){return getPrice(sym);}
 
 // ── SÉRIE HISTORIQUE POUR LE SCAN ─────────────────────────────────────────────
 async function getTDTimeSeries(sym,outputsize=90){
-  if(!tdAllExhausted){
+  // Pour actifs US : essai Yahoo direct d'abord (économise quota TD)
+  if(isUSAsset(sym)){
+    try{
+      const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(sym)+'?range=3mo&interval=1d';
+      const res=await fetch(yhUrl,{signal:AbortSignal.timeout(8000)});
+      if(res.ok){
+        const parsed=await res.json();
+        const result=parsed?.chart?.result?.[0];
+        if(result){
+          const q=result.indicators.quote[0];
+          const idx=q.close.map((_,i)=>i).filter(i=>q.close[i]!=null);
+          if(idx.length>=20){
+            return{
+              closes:idx.map(i=>q.close[i]),
+              highs:idx.map(i=>q.high[i]||q.close[i]),
+              lows:idx.map(i=>q.low[i]||q.close[i]),
+              vols:idx.map(i=>q.volume[i]||0),
+            };
+          }
+        }
+      }
+    }catch(e){}
+    // CORS échoué → TD
+  }
+
+  // Actifs EU, Forex, Commodités ou fallback US : Twelve Data via proxy
+  if(WEBHOOK&&TD_KEYS.length>0&&!tdAllExhausted){
     const tdSym=toTDSymbol(sym);
     const params=new URLSearchParams({symbol:tdSym,interval:'1day',outputsize,apikey:TD_KEY()});
     const tdUrl=TD_BASE+'/time_series?'+params.toString();
@@ -1866,7 +2032,7 @@ async function getTDTimeSeries(sym,outputsize=90){
       const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(tdUrl),{signal:AbortSignal.timeout(15000)});
       if(res.ok){
         const d=await res.json();
-        if(d.code===429){rotateTDKey();}// rotation pour le prochain appel
+        if(d.code===429){rotateTDKey();}
         else if(d.values&&d.values.length){
           const values=d.values.reverse();
           return{
@@ -1884,6 +2050,7 @@ async function getTDTimeSeries(sym,outputsize=90){
 
 // Fonctions de compatibilité
 async function fetchTD(endpoint,params={}){
+  if(!WEBHOOK||TD_KEYS.length===0)throw new Error('WEBHOOK ou clés TD non configurés');
   const p=new URLSearchParams({...params,apikey:TD_KEY()});
   const url=TD_BASE+endpoint+'?'+p.toString();
   const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(10000)});
@@ -1905,7 +2072,15 @@ async function getTDPrices(syms){
 // Suppression des anciens proxys défaillants
 const PROXIES=[];
 async function fetchData(url,timeout=8000){
-  // Yahoo via Apps Script uniquement
+  // Essai Yahoo direct d'abord si l'URL est Yahoo (évite WEBHOOK si vide)
+  if(url.includes('finance.yahoo.com')&&!url.includes('WEBHOOK')){
+    try{
+      const res=await fetch(url,{signal:AbortSignal.timeout(timeout)});
+      if(res.ok){const d=await res.json();if(d.values||d.chart)return d;}
+    }catch(e){}
+  }
+  // Via Apps Script (WEBHOOK) — nécessaire pour actifs EU / contournement CORS
+  if(!WEBHOOK)throw new Error('WEBHOOK non configuré');
   try{
     const res=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(url),{signal:AbortSignal.timeout(timeout)});
     if(res.ok){const d=await res.json();if(d.values||d.chart)return d;const txt=JSON.stringify(d);return JSON.parse(txt);}
@@ -1920,9 +2095,23 @@ async function analyzeAsset(asset){
     const td=await getTDTimeSeries(asset.sym,90);
     closes=td.closes;highs=td.highs;lows=td.lows;vols=td.vols;
   }catch(e){
-    // Fallback to Yahoo via proxy
+    // Fallback Yahoo : direct pour US, via proxy pour EU
     try{
-      const parsed=await fetchData('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(asset.sym)+'?range=3mo&interval=1d',7000);
+      const yhUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(asset.sym)+'?range=3mo&interval=1d';
+      let parsed=null;
+      if(isUSAsset(asset.sym)){
+        // Yahoo direct (pas de CORS sur actifs US en général)
+        try{
+          const r=await fetch(yhUrl,{signal:AbortSignal.timeout(7000)});
+          if(r.ok)parsed=await r.json();
+        }catch(e2){}
+      }
+      // Si Yahoo direct échoue ou actif EU → proxy
+      if(!parsed&&WEBHOOK){
+        const r2=await fetch(WEBHOOK+'?action=tdProxy&url='+encodeURIComponent(yhUrl),{signal:AbortSignal.timeout(8000)});
+        if(r2.ok)parsed=await r2.json();
+      }
+      if(!parsed)return null;
       const res=parsed?.chart?.result?.[0];if(!res)return null;
       const q=res.indicators.quote[0];
       const idx=q.close.map((_,i)=>i).filter(i=>q.close[i]!=null);
@@ -1998,15 +2187,16 @@ async function startScan(){
   document.getElementById('sg').innerHTML='<div style="grid-column:span 2">'+Array(4).fill('<div class="skel" style="margin-bottom:8px"></div>').join('')+'</div>';
   let done=0,ok=0;
   const SCAN_ASSETS=getAllAssets();
-  for(let i=0;i<SCAN_ASSETS.length;i+=6){
-    const batch=SCAN_ASSETS.slice(i,i+6);
+  // Batch de 2 actifs max avec 500ms entre chaque → respecte limite 8 req/min de Twelve Data
+  for(let i=0;i<SCAN_ASSETS.length;i+=2){
+    const batch=SCAN_ASSETS.slice(i,i+2);
     const res=await Promise.allSettled(batch.map(a=>analyzeAsset(a)));
     res.forEach(r=>{if(r.status==='fulfilled'&&r.value){ok++;signals.push(r.value);const s=r.value;if(s.isNew&&s.action==='buy')notify('🟢 '+s.short+' — LANCE-TOI','Entre à '+fp(s.entry,s.price)+' · Objectif '+fp(s.tp1,s.price)+' · Stop '+fp(s.sl,s.price),'buy');prevMap[s.sym]=s.action;}});
     done+=batch.length;
     document.getElementById('pf').style.width=(done/SCAN_ASSETS.length*100)+'%';
     document.getElementById('scan-info').textContent=done+'\/'+SCAN_ASSETS.length+' analysés…';
     renderSignals();checkTPSL();
-    await new Promise(r=>setTimeout(r,150));
+    await new Promise(r=>setTimeout(r,500));
   }
   signals.sort((a,b)=>{const o={buy:0,sell:1,wait:2};if(o[a.action]!==o[b.action])return o[a.action]-o[b.action];return b.score-a.score;});
   renderSignals();updateHome();updateThermo();
@@ -2015,7 +2205,17 @@ async function startScan(){
   document.getElementById('scan-info').textContent=strong+' opportunités · '+ok+' analysés';
   if(ok===0){document.getElementById('sg').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text"><strong>Aucune donnée</strong><br>Désactive ton bloqueur de pub<br>et essaie en navigation privée</div></div>';}
   btn.disabled=false;btn.textContent='↻ Rescanner';isScanning=false;
-  startCd(1800);clearInterval(scanTimer);scanTimer=setInterval(()=>startScan(),1800000);
+  // Mode rapide : re-scan auto toutes les 60min. Mode complet : PAS de re-scan auto (économie quota TD)
+  if(scanMode==='fast'){
+    startCd(3600);
+    clearInterval(scanTimer);
+    scanTimer=setInterval(()=>startScan(),3600000);
+  } else {
+    // Mode complet : pas de countdown ni re-scan auto
+    clearInterval(scanTimer);
+    document.getElementById('countdown').textContent='Manuel';
+    toast('✅ Scan complet terminé','Re-scan manuel uniquement en mode complet — économise le quota API','info');
+  }
 }
 
 function startCd(sec){clearInterval(cdTimer);let s=sec;const el=document.getElementById('countdown');cdTimer=setInterval(()=>{s--;const m=Math.floor(s/60);el.textContent=m+':'+(s%60).toString().padStart(2,'0');if(s<=0)clearInterval(cdTimer);},1000);}
@@ -2043,7 +2243,7 @@ function renderSignals(){
     return '<div class="sig-card '+s.action+'" onclick="openDetail(\''+s.sym+'\')">'
       +'<div class="sc-top"><span class="sc-sym">'+(isFavorite(s.sym)?'⭐ ':'')+s.short+(s.isNew&&s.action==='buy'?'<span class="new-pill">NEW</span>':'')+'</span><span class="sc-action '+aC+'">'+aL+'</span></div>'
       +'<div class="sc-price">'+fp(s.price,s.price)+' <span style="color:'+(s.chgPct>=0?'var(--green)':'var(--red)')+'">'+( s.chgPct>=0?'+':'')+s.chgPct.toFixed(2)+'%</span></div>'
-      +'<div class="sc-reason">'+s.vDetail.substring(0,65)+'…</div>'
+      +'<div class="sc-reason">'+(s.vDetail.length>65?s.vDetail.substring(0,65)+'…':s.vDetail)+'</div>'
       +'<div class="sc-score">'+dots+'</div>'
       +'<div class="sc-footer"><span class="sc-cat">'+s.cat+'</span><span style="font-size:9px;color:var(--text3)">'+s.ts+'</span></div>'
       +'</div>';
@@ -2208,7 +2408,12 @@ function selectDetEmo(btn,icon,label){
   const el=document.getElementById('det-emo-adv');el.style.display='block';el.textContent=EMO_ADVICE[label]||'';
 }
 
-function closeDetail(e){if(e&&e.target!==document.getElementById('overlay'))return;document.getElementById('overlay').classList.remove('open');}
+function closeDetail(e){
+  // Appelé sans argument depuis sheet-close btn → fermeture directe
+  // Appelé avec event depuis overlay onclick → vérifie que le click est sur le fond
+  if(e&&e.target&&e.target!==document.getElementById('overlay'))return;
+  document.getElementById('overlay').classList.remove('open');
+}
 
 function openBroker(sym,broker,search,entry,tp,sl){
   const isBinance=broker==='binance';
@@ -2387,18 +2592,21 @@ function saveWebhook(){
 }
 
 async function syncSave(pos){
+  if(!WEBHOOK)return;
   try{
     await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save',position:pos})});
   }catch(e){console.warn('Sync save failed',e);}
 }
 
 async function syncDelete(id){
+  if(!WEBHOOK)return;
   try{
     await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'delete',id})});
   }catch(e){console.warn('Sync delete failed',e);}
 }
 
 async function loadFromSheets(){
+  if(!WEBHOOK)return;
   try{
     const res=await fetch(WEBHOOK+'?action=load');
     const d=await res.json();
@@ -2411,11 +2619,9 @@ async function loadFromSheets(){
           trailingActive:p.trailingActive,
           halfClosed:p.halfClosed,
           shares:p.shares,
-          status:p.status,// preserve local status (closed positions stay closed)
+          status:p.status,
         };
       });
-
-      // Only load OPEN positions from Sheets — keep local closed history
       const localClosed=positions.filter(p=>p.status==='closed');
       const sheetsOpen=d.positions.filter(p=>p.status==='open').map(p=>{
         const local=localMap[String(p.id)]||{};
@@ -2429,8 +2635,6 @@ async function loadFromSheets(){
           status:'open',
         };
       });
-
-      // Merge: open from Sheets + closed from localStorage
       positions=[...sheetsOpen,...localClosed];
       savePos();
       updatePortfolioUI();
@@ -2441,6 +2645,7 @@ async function loadFromSheets(){
 }
 
 async function syncSettings(){
+  if(!WEBHOOK)return;
   try{
     const settings={capital,objective};
     await fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'settings',settings})});
@@ -2448,6 +2653,7 @@ async function syncSettings(){
 }
 
 async function loadSettingsFromSheets(){
+  if(!WEBHOOK)return;
   try{
     const res=await fetch(WEBHOOK+'?action=loadSettings');
     const d=await res.json();
@@ -2464,15 +2670,19 @@ async function loadSettingsFromSheets(){
 
 // ── REAL-TIME PRICE REFRESH ──────────────────────────────────────────────────
 let priceHistory={};// sym -> [prices]
+let lastEURefreshTime=0;// timestamp dernier refresh actifs EU
 
 async function refreshOpenPositions(){
   const open=positions.filter(p=>p.status==='open');
   if(!open.length)return;
   const cryptos=open.filter(p=>p.broker==='binance');
   const others=open.filter(p=>p.broker!=='binance');
+  // Séparer actifs EU (TD) des actifs US (Yahoo direct)
+  const euPositions=others.filter(p=>isEUAsset(p.sym));
+  const usPositions=others.filter(p=>!isEUAsset(p.sym));
   let updated=0;
 
-  // ── CRYPTO via getPrice (Binance → CoinGecko) ───────────────────────────
+  // ── CRYPTO via Binance direct → CoinGecko (0 appel TD) ──────────────────
   for(const pos of cryptos){
     try{
       const price=await getPrice(pos.sym);
@@ -2487,10 +2697,13 @@ async function refreshOpenPositions(){
     }catch(e){}
   }
 
-  // ── STOCKS/ETF via Twelve Data (proxy → direct fallback) ──────────────────
-  for(const pos of others){
+  // ── ACTIONS US via Yahoo direct (économise quota TD) ─────────────────────
+  for(const pos of usPositions){
     try{
-      const price=await getTDPrice(pos.sym);
+      // Yahoo direct d'abord — 0 appel TD si CORS OK
+      let price=await getYahooPriceDirect(pos.sym,5000);
+      // Si CORS bloqué → TD
+      if(!price)price=await getTDPriceDirect(pos.sym);
       if(price&&price>0){
         pos.currentPrice=price;
         if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
@@ -2500,6 +2713,27 @@ async function refreshOpenPositions(){
         updated++;
       }
     }catch(e){}
+  }
+
+  // ── ACTIONS EU via TD — refresh toutes les 5min seulement (économie quota) ─
+  const now=Date.now();
+  const EU_REFRESH_INTERVAL=5*60*1000;// 5 minutes
+  if(euPositions.length&&(now-lastEURefreshTime)>=EU_REFRESH_INTERVAL){
+    lastEURefreshTime=now;
+    for(const pos of euPositions){
+      try{
+        const price=await getTDPriceDirect(pos.sym);
+        const finalPrice=price||(await getYahooPriceViaProxy(pos.sym));
+        if(finalPrice&&finalPrice>0){
+          pos.currentPrice=finalPrice;
+          if(!priceHistory[pos.sym])priceHistory[pos.sym]=[];
+          priceHistory[pos.sym].push(finalPrice);
+          if(priceHistory[pos.sym].length>60)priceHistory[pos.sym].shift();
+          autoCloseCheck(pos,finalPrice);
+          updated++;
+        }
+      }catch(e){}
+    }
   }
 
   if(updated>0){
@@ -2531,7 +2765,7 @@ function autoCloseCheck(pos,price){
       const halfPnl=(price-pos.entry)*(pos.shares*0.5)*mult;
       pos.shares=pos.shares*0.5;
       pos.amount=pos.amount*0.5;
-      notify('⚡ TP1 atteint — '+pos.short,'50% fermé automatiquement · +'+halfPnl.toFixed(2)+'€. Trailing stop activé !','buy');
+      notify('⚡ TP1 atteint — '+pos.short,'50% fermé automatiquement · '+(halfPnl>=0?'+':'')+halfPnl.toFixed(2)+'€. Trailing stop activé !',halfPnl>=0?'buy':'sell');
       syncSave(pos);
     }
   }
@@ -2709,7 +2943,14 @@ async function checkFavSignalNotifs(){
 
 async function checkScalpingNotifs(){
   if(!notifsOn)return;
-  const favs=[...ASSETS_FAST,...customAssets].filter(a=>isFavorite(a.sym));
+  // getAllAssets() respecte le mode scan actif (rapide ou complet)
+  const seen=new Set();
+  const allAssets=[...getAllAssets(),...customAssets].filter(a=>{
+    if(seen.has(a.sym))return false;
+    seen.add(a.sym);
+    return true;
+  });
+  const favs=allAssets.filter(a=>isFavorite(a.sym));
   for(const asset of favs.slice(0,5)){
     const sig=signals.find(s=>s.sym===asset.sym);
     if(sig&&sig.action==='buy'){
@@ -2822,9 +3063,9 @@ function showSwipeConfirm(posId,el){
   const isPos=pnl>=0;
   if(confirm('Fermer '+pos.short+' ?\nP&L actuel: '+(isPos?'+':'')+pnl.toFixed(2)+'€\n\nConfirmer la fermeture ?')){
     closeTrade(posId);
-    toast('✅ '+pos.short+' fermé',(isPos?'+':'')+pnl.toFixed(2)+'€',isPos?'buy':'sell');
+    // Note: closeTrade() génère déjà son propre toast — pas de double toast ici
   } else {
-    if(el)el.style.transform='';
+    if(el){el.style.transform='';const action=el.querySelector('.swipe-action');if(action)action.style.opacity='0';}
   }
 }
 
@@ -3081,7 +3322,7 @@ function closeFocusHalf(){
   const halfPnl=(price-pos.entry)*(pos.shares*0.5)*mult;
   pos.shares=pos.shares*0.5;pos.amount=pos.amount*0.5;pos.halfClosed=true;
   savePos();syncSave(pos);
-  toast('⚡ 50% fermé — '+pos.short,'+'+ halfPnl.toFixed(2)+'€ sécurisés','buy');
+  toast('⚡ 50% fermé — '+pos.short,(halfPnl>=0?'+':'')+halfPnl.toFixed(2)+'€ sécurisés',halfPnl>=0?'buy':'sell');
   updateFocusOverlay(pos);updatePortfolioUI();
 }
 
@@ -3347,7 +3588,7 @@ function resetAll(){
   if(!confirm('Remettre le portefeuille à zéro ? Les trades ouverts seront supprimés.'))return;
   positions=[];
   savePos();
-  fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'clearAll'})}).catch(()=>{});
+  if(WEBHOOK)fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'clearAll'})}).catch(()=>{});
   updatePortfolioUI();
   renderHistory();
   toast('Portefeuille remis à zéro','','info');
@@ -3371,7 +3612,7 @@ function updateHome(){
   const buys=signals.filter(s=>s.action==='buy');
   const sells=signals.filter(s=>s.action==='sell');
 
-  // Top 3
+  // Top 3 — toujours mis à jour, même si vide
   if(buys.length){
     document.getElementById('top3-list').innerHTML=buys.slice(0,3).map((s,i)=>
       '<div class="top3-item" onclick="openDetail(\''+s.sym+'\')">'
@@ -3381,6 +3622,9 @@ function updateHome(){
       +'<span style="font-family:var(--mono);font-size:10px;color:var(--text3)">'+fp(s.price,s.price)+'</span>'
       +'</div>'
     ).join('');
+  } else {
+    // Aucun signal buy → affiche message neutre
+    document.getElementById('top3-list').innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">'+(signals.length?'Aucun signal d\'achat détecté':'Lance le scanner pour voir les opportunités')+'</div>';
   }
   document.getElementById('dash-scan-time').textContent=signals.length?signals.length+' actifs · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
 
@@ -3648,7 +3892,7 @@ function addPepiteToFav(sym,label){
 // ── ÉVÉNEMENTS DU JOUR ────────────────────────────────────────────────────────
 async function runActuEvents(){
   // No fake events - direct link to real sources
-  const el=document.getElementById('actu-events');
+  const el=document.getElementById('actu-events-home');
   const elFull=document.getElementById('actu-events-full');
   const html='<div style="font-size:11px;color:var(--text2);line-height:2">'
     +'📅 Calendrier économique en temps réel → <a href="https://fr.investing.com/economic-calendar/" target="_blank" style="color:var(--blue)">Investing.com ↗</a><br>'
@@ -3743,6 +3987,7 @@ async function runBriefing(){
   const el=document.getElementById('briefing-body');
   const elActu=document.getElementById('briefing-body-actu');
   if(elActu)elActu.innerHTML='<span class="cursor"></span>';
+  if(el)el.innerHTML='';
   const tops=signals.filter(s=>s.action==='buy').slice(0,3).map(s=>s.short).join(', ')||'aucun signal détecté';
   try{
     const res=await callAI(
@@ -3765,12 +4010,20 @@ async function runBriefing(){
           const j=JSON.parse(line.slice(5));
           if(j.type==='content_block_delta'&&j.delta?.text){
             full+=j.delta.text;
-            if(el)el.innerHTML=md(full);
-            if(elActu)elActu.innerHTML=md(full);
+            // Streaming : uniquement sur l'élément visible (elActu si onglet actu ouvert, sinon el)
+            if(elActu&&elActu.offsetParent!==null){
+              elActu.innerHTML=md(full);
+            } else {
+              if(el)el.innerHTML=md(full);
+            }
           }
         }catch(e){}
       }
     }
+    // Sync final vers les deux éléments
+    const finalHtml=md(full);
+    if(el)el.innerHTML=finalHtml;
+    if(elActu)elActu.innerHTML=finalHtml;
   }catch(e){
     const msg='<strong>Briefing</strong><br>Lance le scan pour un briefing personnalisé.';
     if(el)el.innerHTML=msg;
